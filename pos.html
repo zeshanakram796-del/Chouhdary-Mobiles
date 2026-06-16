@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0f0f0f"/>
+<title>Chouhdary Mobiles</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;--text:#f0f0f0;--muted:#888;--accent:#c8f564;--danger:#ff6b6b;--warning:#f5a623;--success:#4ade80;--blue:#60a5fa;--purple:#a78bfa;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overscroll-behavior:none;}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:600px;margin:0 auto;}
+.header{padding:44px 16px 10px;flex-shrink:0;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.shop-name{font-size:17px;font-weight:700;}
+.shop-sub{font-size:11px;color:var(--muted);}
+.sync-btn{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--font);}
+.sync-btn.ok{color:var(--accent);border-color:#c8f56433;}
+.sync-btn.warn{color:var(--warning);border-color:#f5a62333;}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 10px;}
+.card-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.card-val{font-size:14px;font-weight:600;font-family:var(--mono);}
+.card-val.green{color:var(--accent);}
+.card-val.orange{color:var(--warning);}
+.card-val.blue{color:var(--blue);}
+.card-val.purple{color:var(--purple);}
+.nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;}
+.nav::-webkit-scrollbar{display:none;}
+.nav-btn{flex-shrink:0;padding:10px 12px;text-align:center;font-size:12px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--font);white-space:nowrap;}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.content{flex:1;overflow-y:auto;padding:12px 16px 90px;-webkit-overflow-scrolling:touch;}
+.search-bar{display:flex;gap:8px;margin-bottom:12px;}
+.search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:14px;color:var(--text);font-family:var(--font);outline:none;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--muted);}
+.filter-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:12px;color:var(--text);font-family:var(--font);outline:none;-webkit-appearance:none;cursor:pointer;}
+
+/* INVENTORY ITEM */
+.inv-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:8px;}
+.inv-top{display:flex;align-items:flex-start;gap:10px;}
+.inv-icon{width:40px;height:40px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.inv-info{flex:1;min-width:0;}
+.inv-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.inv-cat{font-size:11px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;}
+.inv-right{text-align:right;flex-shrink:0;}
+.inv-qty{font-size:18px;font-weight:700;font-family:var(--mono);}
+.inv-qty.low{color:var(--warning);}
+.inv-qty.out{color:var(--danger);}
+.inv-qty.ok{color:var(--accent);}
+.qty-label{font-size:9px;color:var(--muted);text-transform:uppercase;}
+.inv-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.price-pair{display:flex;gap:12px;align-items:center;}
+.price-item{display:flex;flex-direction:column;}
+.price-label{font-size:9px;color:var(--muted);text-transform:uppercase;}
+.price-val{font-size:13px;font-weight:500;font-family:var(--mono);}
+.price-val.profit{color:var(--accent);}
+.inv-actions{display:flex;gap:5px;}
+.action-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:500;color:var(--text);cursor:pointer;font-family:var(--font);}
+.action-btn.sell{background:var(--accent);color:#0f0f0f;border-color:var(--accent);}
+.action-btn.del{color:var(--danger);}
+.badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;text-transform:uppercase;}
+.badge.low{background:#f5a62322;color:var(--warning);}
+.badge.out{background:#ff6b6b22;color:var(--danger);}
+
+/* EYE BUTTON */
+.eye-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 6px;font-size:15px;user-select:none;-webkit-user-select:none;}
+.eye-btn:active{color:var(--accent);}
+.purchase-reveal{font-size:12px;font-family:var(--mono);color:var(--warning);background:#f5a62315;border:1px solid #f5a62333;border-radius:6px;padding:2px 8px;display:none;}
+.purchase-reveal.show{display:inline-block;}
+
+/* FORM */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+.form-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-field{display:flex;flex-direction:column;gap:4px;}
+.form-field.full{grid-column:1/-1;}
+.form-field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.form-field input,.form-field select,.form-field textarea{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);font-family:var(--font);outline:none;-webkit-appearance:none;width:100%;}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--accent);}
+.form-field input::placeholder,.form-field textarea::placeholder{color:var(--muted);}
+.submit-btn{width:100%;padding:13px;background:var(--accent);color:#0f0f0f;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:4px;}
+.submit-btn:active{opacity:.85;}
+.submit-btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.submit-btn.blue{background:var(--blue);color:#0f0f0f;}
+.submit-btn.purple{background:var(--purple);color:#0f0f0f;}
+
+/* SALES */
+.sale-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:11px;}
+.sale-icon{width:38px;height:38px;border-radius:10px;background:#c8f56415;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.sale-icon.usb{background:#60a5fa15;}
+.sale-icon.jazz{background:#a78bfa15;}
+.sale-info{flex:1;min-width:0;}
+.sale-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sale-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.sale-right{text-align:right;flex-shrink:0;}
+.sale-amt{font-size:14px;font-weight:600;font-family:var(--mono);color:var(--accent);}
+.sale-profit{font-size:11px;color:var(--success);}
+
+/* WALLETS */
+.wallet-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;}
+.wallet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.wallet-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.wallet-bal{font-size:20px;font-weight:700;font-family:var(--mono);}
+.wallet-bal.jazz{color:var(--purple);}
+.wallet-bal.easy{color:var(--blue);}
+.wallet-tx{font-size:12px;color:var(--muted);margin-top:2px;}
+.tx-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.tx-item:last-child{border-bottom:none;}
+.tx-desc{font-size:13px;}
+.tx-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.tx-amt{font-size:13px;font-weight:600;font-family:var(--mono);}
+.tx-amt.in{color:var(--accent);}
+.tx-amt.out{color:var(--danger);}
+
+/* USB */
+.usb-item{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:12px;padding:13px;margin-bottom:8px;}
+.usb-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.usb-desc{font-size:14px;font-weight:500;}
+.usb-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+.usb-right{text-align:right;}
+.usb-charge{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--blue);}
+.usb-profit{font-size:11px;color:var(--success);}
+
+/* REPORTS */
+.report-section{margin-bottom:20px;}
+.report-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.report-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.report-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.report-card-label{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.report-card-val{font-size:20px;font-weight:600;font-family:var(--mono);}
+.report-card-val.green{color:var(--accent);}
+.report-card-val.blue{color:var(--blue);}
+.report-card-val.purple{color:var(--purple);}
+.bar-item{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.bar-name{font-size:12px;color:var(--text);width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar-wrap{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.bar-fill{height:5px;border-radius:3px;background:var(--accent);}
+.bar-val{font-size:11px;font-family:var(--mono);color:var(--accent);width:65px;text-align:right;flex-shrink:0;}
+.month-row{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;}
+.month-label{font-size:13px;font-weight:500;}
+.month-sale{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--accent);}
+.month-profit{font-size:11px;color:var(--success);}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:#000a;z-index:100;display:flex;align-items:flex-end;justify-content:center;}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px 44px;width:100%;max-width:600px;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+.modal-info{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.modal-info-item{background:var(--surface2);border-radius:10px;padding:10px;}
+.modal-info-label{font-size:10px;color:var(--muted);text-transform:uppercase;}
+.modal-info-val{font-size:14px;font-weight:600;font-family:var(--mono);margin-top:2px;}
+.qty-input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:16px;color:var(--text);font-family:var(--font);outline:none;width:100%;}
+.qty-input:focus{border-color:var(--accent);}
+
+/* SECTION TABS */
+.section-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.stab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;}
+.stab.active{background:var(--accent);color:#0f0f0f;border-color:var(--accent);}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.empty-text{font-size:14px;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:9px 18px;font-size:13px;color:var(--text);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:300;}
+.toast.show{opacity:1;}
+.divider{height:1px;background:var(--border);margin:14px 0;}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+<div id="modal"></div>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div><div class="shop-name">Chouhdary Mobiles</div><div class="shop-sub">POS & Inventory</div></div>
+      <button class="sync-btn ok" id="syncBtn" onclick="syncAll()"><span class="sdot"></span><span id="syncTxt">Synced</span></button>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="card-label">Stock</div><div class="card-val" id="s-items">--</div></div>
+      <div class="card"><div class="card-label">Today Sales</div><div class="card-val green" id="s-today">--</div></div>
+      <div class="card"><div class="card-label">USB Profit</div><div class="card-val blue" id="s-usb">--</div></div>
+      <div class="card"><div class="card-label">Wallets</div><div class="card-val purple" id="s-wallet">--</div></div>
+    </div>
+  </div>
+  <div class="nav" id="mainNav">
+    <button class="nav-btn active" onclick="setTab('inventory',this)">📦 Stock</button>
+    <button class="nav-btn" onclick="setTab('sell',this)">💰 Sell</button>
+    <button class="nav-btn" onclick="setTab('usb',this)">🔧 USB</button>
+    <button class="nav-btn" onclick="setTab('wallets',this)">📲 Wallets</button>
+    <button class="nav-btn" onclick="setTab('sales',this)">📋 Sales</button>
+    <button class="nav-btn" onclick="setTab('reports',this)">📊 Reports</button>
+    <button class="nav-btn" onclick="setTab('addItem',this)">＋ Add</button>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbySD3sY-McJBh4TX--Vgj1hQ7HHD63YIQD2JJRjlW_4_oEr0DXS6qFNXK6s-7wimdc8/exec';
+
+const CAT_EMOJI={'Accessories':'🎧','Chargers':'🔌','Cables':'🔗','Cases':'📱','Earphones':'🎵','Batteries':'🔋','Screens':'📺','Memory':'💾','Electronics':'⚡','Other':'📦'};
+const CATS=Object.keys(CAT_EMOJI);
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+let inventory=[], sales=[], reports={}, usbJobs=[], walletTx=[];
+let activeTab='inventory', searchQ='', filterCat='', isSyncing=false;
+let revealTimers={};
+
+function saveLocal(){
+  localStorage.setItem('cm_inv',JSON.stringify(inventory));
+  localStorage.setItem('cm_sales',JSON.stringify(sales));
+  localStorage.setItem('cm_reports',JSON.stringify(reports));
+  localStorage.setItem('cm_usb',JSON.stringify(usbJobs));
+  localStorage.setItem('cm_wallet',JSON.stringify(walletTx));
+}
+function loadLocal(){
+  inventory=JSON.parse(localStorage.getItem('cm_inv')||'[]');
+  sales=JSON.parse(localStorage.getItem('cm_sales')||'[]');
+  reports=JSON.parse(localStorage.getItem('cm_reports')||'{}');
+  usbJobs=JSON.parse(localStorage.getItem('cm_usb')||'[]');
+  walletTx=JSON.parse(localStorage.getItem('cm_wallet')||'[]');
+}
+
+function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur);}
+function fmt(n){return 'Rs '+Math.round(n||0).toLocaleString();}
+function fmtS(n){return Math.round(n||0).toLocaleString();}
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function catEmoji(cat){return CAT_EMOJI[cat]||'📦';}
+function dayLabel(date){
+  const d=new Date(date+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);
+  const diff=Math.round((now-d)/86400000);
+  return diff===0?'Today':diff===1?'Yesterday':`${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+async function apiFetch(params){
+  const url=API+'?'+new URLSearchParams(params);
+  const r=await fetch(url);return r.json();
+}
+async function apiPost(params){
+  const r=await fetch(API,{method:'POST',body:new URLSearchParams(params)});return r.json();
+}
+
+function setSyncStatus(s,t){
+  document.getElementById('syncBtn').className='sync-btn '+s;
+  document.getElementById('syncTxt').textContent=t;
+}
+
+async function syncAll(){
+  if(isSyncing)return;
+  isSyncing=true;setSyncStatus('warn','Syncing...');
+  try{
+    const[invD,salesD,repD]=await Promise.all([
+      apiFetch({action:'getInventory'}),
+      apiFetch({action:'getSales'}),
+      apiFetch({action:'getReports'})
+    ]);
+    if(invD.success)inventory=invD.items||[];
+    if(salesD.success)sales=salesD.sales||[];
+    if(repD.success)reports=repD;
+    saveLocal();updateSummary();renderTab();setSyncStatus('ok','Synced ✓');
+  }catch(e){setSyncStatus('warn','Offline');toast('Sync failed ⚠️');}
+  isSyncing=false;
+}
+
+function updateSummary(){
+  document.getElementById('s-items').textContent=inventory.length;
+  const todaySales=sales.filter(s=>s.date===todayStr()).reduce((a,s)=>a+parseFloat(s.totalSale||0),0);
+  document.getElementById('s-today').textContent=fmtS(todaySales);
+  const usbProfit=usbJobs.reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  document.getElementById('s-usb').textContent=fmtS(usbProfit);
+  const walletProfit=walletTx.reduce((a,t)=>a+parseFloat(t.profit||0),0);
+
+  document.getElementById('s-wallet').textContent=fmtS(walletProfit);
+}
+
+function setTab(tab,btn){
+  activeTab=tab;searchQ='';filterCat='';
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderTab();
+}
+function renderTab(){
+  const c=document.getElementById('content');
+  if(activeTab==='inventory')renderInventory(c);
+  else if(activeTab==='sell')renderSell(c);
+  else if(activeTab==='usb')renderUSB(c);
+  else if(activeTab==='wallets')renderWallets(c);
+  else if(activeTab==='sales')renderSales(c);
+  else if(activeTab==='reports')renderReports(c);
+  else if(activeTab==='addItem')renderAddItem(c);
+}
+
+// ── INVENTORY ──
+function renderInventory(c){
+  const catOpts=['All',...CATS].map(cat=>`<option value="${cat==='All'?'':cat}" ${filterCat===''&&cat==='All'?'selected':filterCat===cat?'selected':''}>${cat}</option>`).join('');
+  let items=[...inventory];
+  if(searchQ)items=items.filter(i=>i.name.toLowerCase().includes(searchQ.toLowerCase()));
+  if(filterCat)items=items.filter(i=>i.category===filterCat);
+  items.sort((a,b)=>parseInt(a.quantity)-parseInt(b.quantity));
+
+  c.innerHTML=`
+    <div class="search-bar">
+      <input class="search-input" placeholder="Search..." value="${searchQ}" oninput="searchQ=this.value;renderTab()"/>
+      <select class="filter-select" onchange="filterCat=this.value;renderTab()">${catOpts}</select>
+    </div>
+    ${!items.length?`<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">No items found</div></div>`:
+    items.map(item=>{
+      const qty=parseInt(item.quantity),alert=parseInt(item.lowStockAlert||5);
+      const qtyClass=qty===0?'out':qty<=alert?'low':'ok';
+      const profit=parseFloat(item.salePrice)-parseFloat(item.purchasePrice);
+      return `<div class="inv-item">
+        <div class="inv-top">
+          <div class="inv-icon">${catEmoji(item.category)}</div>
+          <div class="inv-info">
+            <div class="inv-name">${item.name}</div>
+            <div class="inv-cat">${item.category}${qty===0?` <span class="badge out">Out</span>`:qty<=alert?` <span class="badge low">Low</span>`:''}</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-qty ${qtyClass}">${qty}</div>
+            <div class="qty-label">units</div>
+          </div>
+        </div>
+        <div class="inv-bottom">
+          <div class="price-pair">
+            <div class="price-item">
+              <div class="price-label">Sale Price</div>
+              <div class="price-val">${fmt(item.salePrice)}</div>
+            </div>
+            <div class="price-item">
+              <div class="price-label">Margin</div>
+              <div class="price-val profit">+${fmt(profit)}</div>
+            </div>
+            <div class="price-item" style="display:flex;flex-direction:column;gap:2px">
+              <div class="price-label">Cost</div>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span class="purchase-reveal" id="pr-${item.id}">---</span>
+                <button class="eye-btn" 
+                  onmousedown="revealPrice(${item.id},'${item.purchasePrice}')" 
+                  ontouchstart="revealPrice(${item.id},'${item.purchasePrice}')"
+                  onmouseup="hidePrice(${item.id})"
+                  ontouchend="hidePrice(${item.id})"
+                  onmouseleave="hidePrice(${item.id})">👁</button>
+              </div>
+            </div>
+          </div>
+          <div class="inv-actions">
+            <button class="action-btn" onclick="showRestockModal(${item.id})">+Stock</button>
+            <button class="action-btn sell" onclick="showSellModal(${item.id})">Sell</button>
+            <button class="action-btn del" onclick="deleteItem(${item.id})">✕</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function revealPrice(id, price){
+  const el=document.getElementById('pr-'+id);
+  if(!el)return;
+  el.textContent=fmt(price);
+  el.classList.add('show');
+  // Auto hide after 3 seconds
+  clearTimeout(revealTimers[id]);
+  revealTimers[id]=setTimeout(()=>hidePrice(id),3000);
+}
+function hidePrice(id){
+  const el=document.getElementById('pr-'+id);
+  if(el){el.classList.remove('show');el.textContent='---';}
+  clearTimeout(revealTimers[id]);
+}
+
+// ── SELL TAB ──
+function renderSell(c){
+  const catOpts=['All',...CATS].map(cat=>`<option value="${cat==='All'?'':cat}">${cat}</option>`).join('');
+  let items=inventory.filter(i=>parseInt(i.quantity)>0);
+  if(searchQ)items=items.filter(i=>i.name.toLowerCase().includes(searchQ.toLowerCase()));
+  if(filterCat)items=items.filter(i=>i.category===filterCat);
+
+  c.innerHTML=`
+    <div class="search-bar">
+      <input class="search-input" placeholder="Search to sell..." value="${searchQ}" oninput="searchQ=this.value;renderTab()"/>
+      <select class="filter-select" onchange="filterCat=this.value;renderTab()">${catOpts}</select>
+    </div>
+    ${!items.length?`<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">No items available</div></div>`:
+    items.map(item=>`
+      <div class="inv-item">
+        <div class="inv-top">
+          <div class="inv-icon">${catEmoji(item.category)}</div>
+          <div class="inv-info"><div class="inv-name">${item.name}</div><div class="inv-cat">${item.category}</div></div>
+          <div class="inv-right"><div class="inv-qty ok">${item.quantity}</div><div class="qty-label">left</div></div>
+        </div>
+        <div class="inv-bottom">
+          <div class="price-pair">
+            <div class="price-item"><div class="price-label">Sale Price</div><div class="price-val">${fmt(item.salePrice)}</div></div>
+          </div>
+          <button class="action-btn sell" onclick="showSellModal(${item.id})">Sell Now</button>
+        </div>
+      </div>`).join('')}`;
+}
+
+// ── USB / REPAIR ──
+function renderUSB(c){
+  const totalProfit=usbJobs.reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  const totalCharged=usbJobs.reduce((a,j)=>a+parseFloat(j.charged||0),0);
+  const totalCost=usbJobs.reduce((a,j)=>a+parseFloat(j.cost||0),0);
+  const sorted=[...usbJobs].sort((a,b)=>b.id-a.id);
+
+  c.innerHTML=`
+    <div class="report-cards" style="margin-bottom:14px">
+      <div class="report-card"><div class="report-card-label">Total Charged</div><div class="report-card-val blue">${fmt(totalCharged)}</div></div>
+      <div class="report-card"><div class="report-card-label">Net Profit</div><div class="report-card-val green">${fmt(totalProfit)}</div></div>
+    </div>
+    <div class="form-card">
+      <div class="form-title">Add USB / Repair Job</div>
+      <div class="form-grid">
+        <div class="form-field full"><label>Description</label>
+          <input type="text" id="usb-desc" placeholder="e.g. iPhone charging port repair"/></div>
+        <div class="form-field full"><label>Customer Name (optional)</label>
+          <input type="text" id="usb-customer" placeholder="Customer name"/></div>
+        <div class="form-field"><label>Parts Cost (Rs)</label>
+          <input type="number" id="usb-cost" placeholder="0" inputmode="numeric"/></div>
+        <div class="form-field"><label>Amount Charged (Rs)</label>
+          <input type="number" id="usb-charge" placeholder="0" inputmode="numeric"/></div>
+      </div>
+      <button class="submit-btn blue" onclick="addUSBJob()">✓ Add Job</button>
+    </div>
+    ${!sorted.length?`<div class="empty"><div class="empty-icon">🔧</div><div class="empty-text">No jobs recorded yet</div></div>`:
+    sorted.map(job=>`
+      <div class="usb-item">
+        <div class="usb-top">
+          <div>
+            <div class="usb-desc">🔧 ${job.desc}</div>
+            <div class="usb-meta">${job.customer?job.customer+' · ':''} ${job.date}</div>
+          </div>
+          <div class="usb-right">
+            <div class="usb-charge">${fmt(job.charged)}</div>
+            <div class="usb-profit">Profit: +${fmt(job.profit)}</div>
+          </div>
+        </div>
+      </div>`).join('')}`;
+}
+
+function addUSBJob(){
+  const desc=document.getElementById('usb-desc')?.value.trim();
+  const customer=document.getElementById('usb-customer')?.value.trim();
+  const cost=parseFloat(document.getElementById('usb-cost')?.value)||0;
+  const charged=parseFloat(document.getElementById('usb-charge')?.value);
+  if(!desc||isNaN(charged)||charged<=0){toast('Enter description and amount ⚠️');return;}
+  const profit=charged-cost;
+  usbJobs.push({id:Date.now(),desc,customer,cost,charged,profit,date:todayStr()});
+  saveLocal();updateSummary();renderTab();
+  toast('Job added ✅');
+}
+
+// ── WALLETS ──
+function renderWallets(c){
+  const jazzTx=walletTx.filter(t=>t.wallet==='JazzCash');
+  const easyTx=walletTx.filter(t=>t.wallet==='EasyPaisa');
+  const jazzProfit=jazzTx.reduce((a,t)=>a+parseFloat(t.profit||0),0);
+  const easyProfit=easyTx.reduce((a,t)=>a+parseFloat(t.profit||0),0);
+
+  c.innerHTML=`
+    <div class="report-cards" style="margin-bottom:14px">
+      <div class="report-card"><div class="report-card-label">JazzCash Profit</div><div class="report-card-val purple">${fmt(jazzProfit)}</div></div>
+      <div class="report-card"><div class="report-card-label">EasyPaisa Profit</div><div class="report-card-val blue">${fmt(easyProfit)}</div></div>
+    </div>
+    <div class="wallet-card">
+      <div class="wallet-header">
+        <div class="wallet-title">📲 JazzCash</div>
+        <div><div class="wallet-bal jazz">${fmt(jazzProfit)}</div><div class="wallet-tx">${jazzTx.length} entries</div></div>
+      </div>
+      ${jazzTx.slice().reverse().slice(0,5).map(t=>`
+        <div class="tx-item">
+          <div><div class="tx-desc">${t.desc}</div><div class="tx-meta">${t.date}</div></div>
+          <div class="tx-amt in">+${fmt(t.profit)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="wallet-card" style="margin-top:10px">
+      <div class="wallet-header">
+        <div class="wallet-title">💚 EasyPaisa</div>
+        <div><div class="wallet-bal easy">${fmt(easyProfit)}</div><div class="wallet-tx">${easyTx.length} entries</div></div>
+      </div>
+      ${easyTx.slice().reverse().slice(0,5).map(t=>`
+        <div class="tx-item">
+          <div><div class="tx-desc">${t.desc}</div><div class="tx-meta">${t.date}</div></div>
+          <div class="tx-amt in">+${fmt(t.profit)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="form-card" style="margin-top:12px">
+      <div class="form-title">Add Commission / Profit</div>
+      <div class="form-grid">
+        <div class="form-field"><label>Wallet</label>
+          <select id="w-wallet"><option value="JazzCash">📲 JazzCash</option><option value="EasyPaisa">💚 EasyPaisa</option></select></div>
+        <div class="form-field"><label>Profit Earned (Rs)</label>
+          <input type="number" id="w-profit" placeholder="0" inputmode="numeric"/></div>
+        <div class="form-field full"><label>Description (optional)</label>
+          <input type="text" id="w-desc" placeholder="e.g. 5 transactions today"/></div>
+      </div>
+      <button class="submit-btn purple" onclick="addWalletTx()">✓ Add Profit</button>
+    </div>`;
+}
+
+function addWalletTx(){
+  const wallet=document.getElementById('w-wallet')?.value;
+  const profit=parseFloat(document.getElementById('w-profit')?.value);
+  const desc=document.getElementById('w-desc')?.value.trim()||'Commission';
+  if(isNaN(profit)||profit<=0){toast('Enter profit amount ⚠️');return;}
+  walletTx.push({id:Date.now(),wallet,profit,desc,date:todayStr()});
+  saveLocal();updateSummary();renderTab();
+  toast('Profit added ✅');
+}
+
+// ── SALES ──
+function renderSales(c){
+  const allSales=[...sales].sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.id-a.id);
+  const groups={};
+  allSales.forEach(s=>{const d=String(s.date);if(!groups[d])groups[d]=[];groups[d].push(s);});
+
+  c.innerHTML=!allSales.length
+    ?`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No sales yet</div></div>`
+    :Object.entries(groups).map(([date,items])=>{
+      const dayTotal=items.reduce((a,s)=>a+parseFloat(s.totalSale||0),0);
+      const dayProfit=items.reduce((a,s)=>a+parseFloat(s.totalProfit||0),0);
+      return `<div style="margin-bottom:18px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;display:flex;justify-content:space-between">
+          <span>${dayLabel(date)}</span>
+          <span style="font-family:var(--mono);color:var(--text)">${fmt(dayTotal)} · +${fmt(dayProfit)}</span>
+        </div>
+        ${items.map(s=>`
+          <div class="sale-item">
+            <div class="sale-icon">${catEmoji(s.category)}</div>
+            <div class="sale-info">
+              <div class="sale-name">${s.itemName}</div>
+              <div class="sale-meta">Qty: ${s.quantity} · ${s.category}</div>
+            </div>
+            <div class="sale-right">
+              <div class="sale-amt">${fmt(s.totalSale)}</div>
+              <div class="sale-profit">+${fmt(s.totalProfit)} profit</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+}
+
+// ── REPORTS ──
+function renderReports(c){
+  const totalSale=reports.totalSale||0;
+  const totalProfit=reports.totalProfit||0;
+  const byItem=reports.byItem||{};
+  const byMonth=reports.byMonth||{};
+  const usbProfit=usbJobs.reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  const usbRevenue=usbJobs.reduce((a,j)=>a+parseFloat(j.charged||0),0);
+  const jazzProfit=walletTx.filter(t=>t.wallet==='JazzCash').reduce((a,t)=>a+parseFloat(t.profit||0),0);
+  const easyProfit=walletTx.filter(t=>t.wallet==='EasyPaisa').reduce((a,t)=>a+parseFloat(t.profit||0),0);
+  const sortedItems=Object.entries(byItem).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxItem=sortedItems[0]?.[1]||1;
+  const sortedMonths=Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6);
+
+  c.innerHTML=`
+    <div class="report-section">
+      <div class="report-title">Overall Summary</div>
+      <div class="report-cards">
+        <div class="report-card"><div class="report-card-label">Total Revenue</div><div class="report-card-val green">${fmt(totalSale)}</div></div>
+        <div class="report-card"><div class="report-card-label">Product Profit</div><div class="report-card-val green">${fmt(totalProfit)}</div></div>
+        <div class="report-card"><div class="report-card-label">USB Revenue</div><div class="report-card-val blue">${fmt(usbRevenue)}</div></div>
+        <div class="report-card"><div class="report-card-label">USB Profit</div><div class="report-card-val blue">${fmt(usbProfit)}</div></div>
+        <div class="report-card"><div class="report-card-label">JazzCash Profit</div><div class="report-card-val purple">${fmt(jazzProfit)}</div></div>
+        <div class="report-card"><div class="report-card-label">EasyPaisa Profit</div><div class="report-card-val blue">${fmt(easyProfit)}</div></div>
+      </div>
+    </div>
+    <div class="report-section">
+      <div class="report-title">Top Selling Products</div>
+      ${!sortedItems.length?`<div class="empty" style="padding:16px"><div class="empty-text">No sales data yet</div></div>`:
+      sortedItems.map(([name,amt])=>`
+        <div class="bar-item">
+          <div class="bar-name">${name}</div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(amt/maxItem*100)}%"></div></div>
+          <div class="bar-val">${fmt(amt)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="report-section">
+      <div class="report-title">Monthly Sales</div>
+      ${!sortedMonths.length?`<div class="empty" style="padding:16px"><div class="empty-text">No data yet</div></div>`:
+      sortedMonths.map(([month,data])=>`
+        <div class="month-row">
+          <div class="month-label">${month}</div>
+          <div style="text-align:right">
+            <div class="month-sale">${fmt(data.sale)}</div>
+            <div class="month-profit">Profit: +${fmt(data.profit)}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── ADD ITEM ──
+function renderAddItem(c){
+  const catOpts=CATS.map(cat=>`<option value="${cat}">${catEmoji(cat)} ${cat}</option>`).join('');
+  c.innerHTML=`
+    <div class="form-card">
+      <div class="form-title">Add New Item</div>
+      <div class="form-grid">
+        <div class="form-field full"><label>Item Name</label>
+          <input type="text" id="i-name" placeholder="e.g. Samsung 25W Charger"/></div>
+        <div class="form-field full"><label>Category</label>
+          <select id="i-cat">${catOpts}</select></div>
+        <div class="form-field"><label>Purchase Price (Rs)</label>
+          <input type="number" id="i-buy" placeholder="0" inputmode="numeric"/></div>
+        <div class="form-field"><label>Sale Price (Rs)</label>
+          <input type="number" id="i-sell" placeholder="0" inputmode="numeric"/></div>
+        <div class="form-field"><label>Quantity</label>
+          <input type="number" id="i-qty" placeholder="0" inputmode="numeric"/></div>
+        <div class="form-field"><label>Low Stock Alert At</label>
+          <input type="number" id="i-alert" placeholder="5" inputmode="numeric"/></div>
+      </div>
+      <button class="submit-btn" onclick="addItem()">✓ Add to Inventory</button>
+    </div>`;
+  setTimeout(()=>document.getElementById('i-name')?.focus(),100);
+}
+
+// ── MODALS ──
+function showSellModal(id){
+  const item=inventory.find(i=>Number(i.id)===Number(id));
+  if(!item)return;
+  document.getElementById('modal').innerHTML=`
+    <div class="modal-bg" onclick="closeModal(event)">
+      <div class="modal">
+        <div class="modal-title">${item.name}</div>
+        <div class="modal-sub">${item.category} · ${item.quantity} units in stock</div>
+        <div class="modal-info">
+          <div class="modal-info-item"><div class="modal-info-label">Sale Price</div><div class="modal-info-val">${fmt(item.salePrice)}</div></div>
+          <div class="modal-info-item"><div class="modal-info-label">Margin/unit</div><div class="modal-info-val" style="color:var(--accent)">+${fmt(parseFloat(item.salePrice)-parseFloat(item.purchasePrice))}</div></div>
+          <div class="modal-info-item"><div class="modal-info-label">In Stock</div><div class="modal-info-val">${item.quantity}</div></div>
+        </div>
+        <div class="form-field" style="margin-bottom:12px">
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block">Quantity</label>
+          <input class="qty-input" type="number" id="sell-qty" value="1" min="1" max="${item.quantity}" inputmode="numeric"/>
+        </div>
+        <button class="submit-btn" onclick="confirmSell(${item.id})">✓ Confirm Sale</button>
+        <button class="submit-btn secondary" style="margin-top:8px" onclick="document.getElementById('modal').innerHTML=''">Cancel</button>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById('sell-qty')?.select(),100);
+}
+
+function showRestockModal(id){
+  const item=inventory.find(i=>Number(i.id)===Number(id));
+  if(!item)return;
+  document.getElementById('modal').innerHTML=`
+    <div class="modal-bg" onclick="closeModal(event)">
+      <div class="modal">
+        <div class="modal-title">Restock: ${item.name}</div>
+        <div class="modal-sub">Current stock: ${item.quantity} units</div>
+        <div class="form-field" style="margin-bottom:12px">
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block">Add Quantity</label>
+          <input class="qty-input" type="number" id="restock-qty" value="10" min="1" inputmode="numeric"/>
+        </div>
+        <button class="submit-btn" onclick="confirmRestock(${item.id})">✓ Add Stock</button>
+        <button class="submit-btn secondary" style="margin-top:8px" onclick="document.getElementById('modal').innerHTML=''">Cancel</button>
+      </div>
+    </div>`;
+}
+
+function closeModal(e){if(e.target.classList.contains('modal-bg'))document.getElementById('modal').innerHTML='';}
+
+// ── ACTIONS ──
+async function addItem(){
+  const name=document.getElementById('i-name')?.value.trim();
+  const cat=document.getElementById('i-cat')?.value;
+  const buy=parseFloat(document.getElementById('i-buy')?.value);
+  const sell=parseFloat(document.getElementById('i-sell')?.value);
+  const qty=parseInt(document.getElementById('i-qty')?.value);
+  const alert=parseInt(document.getElementById('i-alert')?.value)||5;
+  if(!name||isNaN(buy)||isNaN(sell)||isNaN(qty)){toast('Fill all fields ⚠️');return;}
+  if(sell<buy){toast('Sale price must be higher than purchase price ⚠️');return;}
+  toast('Adding...');
+  try{
+    const d=await apiPost({action:'addItem',name,category:cat,purchasePrice:buy,salePrice:sell,quantity:qty,lowStockAlert:alert});
+    if(d.success){await syncAll();setTab('inventory',document.querySelectorAll('.nav-btn')[0]);toast('Item added ✅');}
+  }catch(e){toast('Failed ❌');}
+}
+
+async function confirmSell(id){
+  const qty=parseInt(document.getElementById('sell-qty')?.value);
+  if(!qty||qty<1){toast('Enter valid quantity ⚠️');return;}
+  document.getElementById('modal').innerHTML='';
+  toast('Recording sale...');
+  try{
+    const d=await apiPost({action:'addSale',itemId:id,quantity:qty});
+    if(d.success){await syncAll();toast('Sale recorded ✅');}
+    else toast(d.error||'Failed ❌');
+  }catch(e){toast('Failed ❌');}
+}
+
+async function confirmRestock(id){
+  const addQty=parseInt(document.getElementById('restock-qty')?.value);
+  if(!addQty||addQty<1){toast('Enter valid quantity ⚠️');return;}
+  const item=inventory.find(i=>Number(i.id)===Number(id));
+  if(!item)return;
+  const newQty=parseInt(item.quantity)+addQty;
+  document.getElementById('modal').innerHTML='';
+  toast('Restocking...');
+  try{
+    const d=await apiPost({action:'updateQuantity',id,quantity:newQty});
+    if(d.success){await syncAll();toast('Stock updated ✅');}
+  }catch(e){toast('Failed ❌');}
+}
+
+async function deleteItem(id){
+  if(!confirm('Delete this item?'))return;
+  toast('Deleting...');
+  try{
+    await apiPost({action:'deleteItem',id});
+    await syncAll();toast('Deleted ✅');
+  }catch(e){toast('Failed ❌');}
+}
+
+loadLocal();updateSummary();renderTab();syncAll();
+</script>
+</body>
+</html>
