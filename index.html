@@ -180,9 +180,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       <div><div class="shop-name">Chouhdary Mobiles</div><div class="shop-sub">POS & Inventory</div></div>
       <button class="sync-btn ok" id="syncBtn" onclick="syncAll()"><span class="sdot"></span><span id="syncTxt">Synced</span></button>
     </div>
-    <div class="cards">
-      <div class="card"><div class="card-label">Stock</div><div class="card-val" id="s-items">--</div></div>
+    <div class="cards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="card"><div class="card-label">Stock Items</div><div class="card-val" id="s-items">--</div></div>
       <div class="card"><div class="card-label">Today Sales</div><div class="card-val green" id="s-today">--</div></div>
+      <div class="card"><div class="card-label">Invested</div><div class="card-val orange" id="s-invest">--</div></div>
       <div class="card"><div class="card-label">USB Profit</div><div class="card-val blue" id="s-usb">--</div></div>
       <div class="card"><div class="card-label">Wallets</div><div class="card-val purple" id="s-wallet">--</div></div>
     </div>
@@ -202,7 +203,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbySD3sY-McJBh4TX--Vgj1hQ7HHD63YIQD2JJRjlW_4_oEr0DXS6qFNXK6s-7wimdc8/exec';
 
-const CAT_EMOJI={'Accessories':'🎧','Chargers':'🔌','Cables':'🔗','Cases':'📱','Earphones':'🎵','Batteries':'🔋','Screens':'📺','Memory':'💾','Electronics':'⚡','Other':'📦'};
+const CAT_EMOJI={'Mobile Phones':'📱','Accessories':'🎧','Chargers':'🔌','Cables':'🔗','Cases':'🛡️','Earphones':'🎵','Batteries':'🔋','Screens':'📺','Memory':'💾','Electronics':'⚡','Other':'📦'};
 const CATS=Object.keys(CAT_EMOJI);
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -275,6 +276,8 @@ function updateSummary(){
   const walletProfit=walletTx.reduce((a,t)=>a+parseFloat(t.profit||0),0);
 
   document.getElementById('s-wallet').textContent=fmtS(walletProfit);
+  const totalInvest=inventory.reduce((a,i)=>a+parseFloat(i.purchasePrice||0)*parseInt(i.quantity||0),0);
+  document.getElementById("s-invest").textContent=fmt(totalInvest);
 }
 
 function setTab(tab,btn){
