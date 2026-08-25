@@ -7,6 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0f0f0f"/>
 <title>Chouhdary Mobiles</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<meta name="apple-mobile-web-app-title" content="CM Shop"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 :root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;--text:#f0f0f0;--muted:#888;--accent:#c8f564;--danger:#ff6b6b;--warning:#f5a623;--success:#4ade80;--blue:#60a5fa;--purple:#a78bfa;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
@@ -45,7 +49,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .balance-banner{background:linear-gradient(135deg,#0f1a0a,#0a0f1a);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px;}
 .balance-banner-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
 .balance-banner-title span{color:var(--accent);font-weight:600;}
-.balance-wallets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.balance-wallets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
 .balance-wallet{background:var(--surface2);border-radius:10px;padding:10px;cursor:pointer;border:1px solid var(--border);transition:border-color .15s;}
 .balance-wallet:active{border-color:var(--accent);}
 .balance-wallet-icon{font-size:18px;margin-bottom:4px;}
@@ -54,6 +58,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .balance-wallet-amt.cash{color:var(--accent);}
 .balance-wallet-amt.jazz{color:var(--purple);}
 .balance-wallet-amt.easy{color:var(--blue);}
+.balance-wallet-amt.bank{color:#f9a825;}
 .balance-total{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border);}
 .balance-total-label{font-size:11px;color:var(--muted);}
 .balance-total-val{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent);}
@@ -136,6 +141,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .sale-right{text-align:right;flex-shrink:0;}
 .sale-amt{font-size:14px;font-weight:600;font-family:var(--mono);color:var(--accent);}
 .sale-profit{font-size:11px;color:var(--success);}
+.del-sale-btn{background:none;border:none;color:#ff6b6b;font-size:14px;cursor:pointer;padding:2px 4px;margin-top:3px;opacity:.7;display:block;margin-left:auto;}
+.del-sale-btn:hover{opacity:1;}
 
 /* WALLETS */
 .wallet-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;}
@@ -282,7 +289,7 @@ const MONTHS=['January','February','March','April','May','June','July','August',
 const EXP_CATS=['Rent','Electricity','Staff Salary','Stock Purchase','Maintenance','Transport','Other'];
 
 let inventory=[], sales=[], reports={}, usbJobs=[], walletTx=[], udhaarList=[], expenses=[];
-let balances={cash:0, jazz:0, easy:0};
+let balances={cash:0, jazz:0, easy:0, bank:0};
 let balanceTx=[];
 let finExpenses=[];
 let activeTab='inventory', searchQ='', filterCat='', isSyncing=false;
@@ -311,7 +318,8 @@ function loadLocal(){
     walletTx=JSON.parse(localStorage.getItem('cm_wallet')||'[]');
     udhaarList=JSON.parse(localStorage.getItem('cm_udhaar')||'[]');
     expenses=JSON.parse(localStorage.getItem('cm_expenses')||'[]');
-    balances=JSON.parse(localStorage.getItem('cm_balances')||'{"cash":0,"jazz":0,"easy":0}');
+    const savedBal=JSON.parse(localStorage.getItem('cm_balances')||'{}');
+    balances={cash:0,jazz:0,easy:0,bank:0,...savedBal};
     balanceTx=JSON.parse(localStorage.getItem('cm_balanceTx')||'[]');
     finExpenses=JSON.parse(localStorage.getItem('cm_finExp')||'[]');
   }catch(e){}
@@ -406,8 +414,9 @@ function getDailyStats(){
   usbJobs.filter(j=>j.date===today).forEach(j=>{if(j.customer&&j.customer.trim())customerSet.add(j.customer.trim().toLowerCase());});
   walletTx.filter(t=>t.date===today).forEach(t=>{if(t.desc&&t.desc.trim()&&t.desc!=='Commission')customerSet.add(t.desc.trim().toLowerCase());});
   const namedCount=customerSet.size;
-  const anonymousTx=todaySalesList.filter(s=>!s.customerName||!s.customerName.trim()).length;
-  const totalCustomers=namedCount+anonymousTx;
+  const anonymousSales=todaySalesList.filter(s=>!s.customerName||!s.customerName.trim()).length;
+  const anonymousJobs=usbJobs.filter(j=>j.date===today&&(!j.customer||!j.customer.trim())).length;
+  const totalCustomers=namedCount+anonymousSales+anonymousJobs;
 
   const usbOnlyToday=usbJobs.filter(j=>j.date===today&&!String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0);
   const repairToday=usbJobs.filter(j=>j.date===today&&String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0);
@@ -727,6 +736,7 @@ function renderUSB(c){
           <div class="usb-right">
             <div class="usb-charge">${fmt(job.charged)}</div>
             <div class="usb-profit">Profit: +${fmt(job.profit)}</div>
+            <button class="del-sale-btn" onclick="deleteUSBJob(${job.id})">🗑️</button>
           </div>
         </div>
       </div>`).join('')}`;
@@ -772,10 +782,10 @@ function renderWallets(c){
         <div class="wallet-title">📲 JazzCash</div>
         <div><div class="wallet-bal jazz">${fmt(jazzProfit)}</div><div class="wallet-tx">${jazzTx.length} entries</div></div>
       </div>
-      ${jazzTx.slice().reverse().slice(0,5).map(t=>`
+      ${jazzTx.slice().reverse().map(t=>`
         <div class="tx-item">
           <div><div class="tx-desc">${escHtml(t.desc)}</div><div class="tx-meta">${t.date}</div></div>
-          <div class="tx-amt in">+${fmt(t.profit)}</div>
+          <div style="display:flex;align-items:center;gap:6px"><div class="tx-amt in">+${fmt(t.profit)}</div><button class="del-sale-btn" style="margin:0" onclick="deleteWalletTx(${t.id})">🗑️</button></div>
         </div>`).join('')}
     </div>
     <div class="wallet-card" style="margin-top:10px">
@@ -783,10 +793,10 @@ function renderWallets(c){
         <div class="wallet-title">💚 EasyPaisa</div>
         <div><div class="wallet-bal easy">${fmt(easyProfit)}</div><div class="wallet-tx">${easyTx.length} entries</div></div>
       </div>
-      ${easyTx.slice().reverse().slice(0,5).map(t=>`
+      ${easyTx.slice().reverse().map(t=>`
         <div class="tx-item">
           <div><div class="tx-desc">${escHtml(t.desc)}</div><div class="tx-meta">${t.date}</div></div>
-          <div class="tx-amt in">+${fmt(t.profit)}</div>
+          <div style="display:flex;align-items:center;gap:6px"><div class="tx-amt in">+${fmt(t.profit)}</div><button class="del-sale-btn" style="margin:0" onclick="deleteWalletTx(${t.id})">🗑️</button></div>
         </div>`).join('')}
     </div>
     <div class="form-card" style="margin-top:12px">
@@ -880,6 +890,7 @@ function renderKharcha(c){
         </div>
         <div class="exp-right">
           <div class="exp-amt">−${fmt(e.amount)}</div>
+          <button class="del-sale-btn" onclick="deleteExpense(${e.id})">🗑️</button>
         </div>
       </div>`).join('')}
     ${finSorted.length?`<div style="margin-top:16px">
@@ -938,9 +949,14 @@ function addToEasyBalance(amount,desc){
   balanceTx.push({type:'in',wallet:'easy',amount,desc,date:todayStr(),ts:Date.now()});
   saveLocal();
 }
+function addToBankBalance(amount,desc){
+  balances.bank=(balances.bank||0)+amount;
+  balanceTx.push({type:'in',wallet:'bank',amount,desc,date:todayStr(),ts:Date.now()});
+  saveLocal();
+}
 
 function renderBalance(c){
-  const totalBal=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0);
+  const totalBal=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
   const sortedTx=[...balanceTx].sort((a,b)=>b.ts-a.ts);
   const finTotal=finExpenses.reduce((a,e)=>a+parseFloat(e.amount||0),0);
 
@@ -963,6 +979,11 @@ function renderBalance(c){
           <div class="balance-wallet-name">EasyPaisa</div>
           <div class="balance-wallet-amt easy">${fmt(balances.easy||0)}</div>
         </div>
+        <div class="balance-wallet" onclick="showBalanceEditModal('bank')">
+          <div class="balance-wallet-icon">🏦</div>
+          <div class="balance-wallet-name">Bank</div>
+          <div class="balance-wallet-amt bank">${fmt(balances.bank||0)}</div>
+        </div>
       </div>
       <div class="balance-total">
         <div class="balance-total-label">Total Balance (All Wallets)</div>
@@ -978,6 +999,7 @@ function renderBalance(c){
             <option value="cash">💵 Cash</option>
             <option value="jazz">📲 JazzCash</option>
             <option value="easy">💚 EasyPaisa</option>
+            <option value="bank">🏦 Bank</option>
           </select></div>
         <div class="form-field"><label>Type</label>
           <select id="b-type">
@@ -1008,14 +1030,14 @@ function renderBalance(c){
       <div class="tx-item" style="padding:10px 0">
         <div>
           <div class="tx-desc">${escHtml(tx.desc||'Entry')}</div>
-          <div class="tx-meta">${tx.wallet==='cash'?'💵 Cash':tx.wallet==='jazz'?'📲 JazzCash':'💚 EasyPaisa'} · ${tx.date}</div>
+          <div class="tx-meta">${tx.wallet==='cash'?'💵 Cash':tx.wallet==='jazz'?'📲 JazzCash':tx.wallet==='bank'?'🏦 Bank':'💚 EasyPaisa'} · ${tx.date}</div>
         </div>
         <div class="tx-amt ${tx.type==='in'?'in':'out'}">${tx.type==='in'?'+':'−'}${fmt(tx.amount)}</div>
       </div>`).join('')}`}`;
 }
 
 function showBalanceEditModal(wallet){
-  const names={cash:'💵 Cash',jazz:'📲 JazzCash',easy:'💚 EasyPaisa'};
+  const names={cash:'💵 Cash',jazz:'📲 JazzCash',easy:'💚 EasyPaisa',bank:'🏦 Bank'};
   const current=balances[wallet]||0;
   document.getElementById('modal').innerHTML=`
     <div class="modal-bg" onclick="closeModal(event)">
@@ -1096,11 +1118,50 @@ function renderSales(c){
             <div class="sale-right">
               <div class="sale-amt">${fmt(s.totalSale)}</div>
               <div class="sale-profit">+${fmt(s.totalProfit)} profit</div>
+              <button class="del-sale-btn" onclick="deleteSale(${s.id})">🗑️</button>
             </div>
           </div>`).join('')}
       </div>`;
     }).join('')
   );
+}
+
+function deleteSale(id){
+  const s=sales.find(x=>x.id==id);
+  if(!s)return;
+  if(!confirm(`Delete sale: ${s.itemName} (${fmt(s.totalSale)})?\nThis cannot be undone.`))return;
+  const inv=inventory.find(i=>i.id==s.itemId||i.name===s.itemName);
+  if(inv){inv.quantity=(parseInt(inv.quantity)||0)+(parseInt(s.quantity)||1);}
+  sales=sales.filter(x=>x.id!=id);
+  saveLocal();updateSummary();renderTab();toast('Sale deleted ✅');
+  fetch(API+'?action=deleteSale&id='+id).catch(()=>{});
+}
+
+function deleteUSBJob(id){
+  const j=usbJobs.find(x=>x.id==id);
+  if(!j)return;
+  if(!confirm(`Delete job: ${j.desc} (${fmt(j.charged)})?\nThis cannot be undone.`))return;
+  usbJobs=usbJobs.filter(x=>x.id!=id);
+  saveLocal();updateSummary();renderTab();toast('Job deleted ✅');
+  fetch(API+'?action=deleteUSB&id='+id).catch(()=>{});
+}
+
+function deleteExpense(id){
+  const e=expenses.find(x=>x.id==id);
+  if(!e)return;
+  if(!confirm(`Delete expense: ${e.desc||e.category} (${fmt(e.amount)})?\nThis cannot be undone.`))return;
+  expenses=expenses.filter(x=>x.id!=id);
+  saveLocal();updateSummary();renderTab();toast('Expense deleted ✅');
+  fetch(API+'?action=deleteExpense&id='+id).catch(()=>{});
+}
+
+function deleteWalletTx(id){
+  const t=walletTx.find(x=>x.id==id);
+  if(!t)return;
+  if(!confirm(`Delete ${t.wallet} entry: ${t.desc} (${fmt(t.profit)})?\nThis cannot be undone.`))return;
+  walletTx=walletTx.filter(x=>x.id!=id);
+  saveLocal();updateSummary();renderTab();toast('Entry deleted ✅');
+  fetch(API+'?action=deleteWallet&id='+id).catch(()=>{});
 }
 
 // ── MONTHLY STATS ──
@@ -1469,6 +1530,10 @@ async function deleteItem(id){
 
 loadLocal();updateSummary();renderTab();syncAll();
 fetchFinExpenses();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
