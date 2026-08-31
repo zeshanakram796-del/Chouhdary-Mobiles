@@ -1343,7 +1343,6 @@ function showSellModal(id){
         <div class="modal-sub">${escHtml(item.category)} · ${item.quantity} units in stock</div>
         <div class="modal-info">
           <div class="modal-info-item"><div class="modal-info-label">Default Price</div><div class="modal-info-val">${fmt(defaultSalePrice)}</div></div>
-          <div class="modal-info-item"><div class="modal-info-label">Purchase Cost</div><div class="modal-info-val" style="color:var(--warning)">${fmt(purchasePrice)}</div></div>
           <div class="modal-info-item"><div class="modal-info-label">In Stock</div><div class="modal-info-val">${item.quantity}</div></div>
         </div>
         <div class="form-field" style="margin-bottom:10px">
@@ -1358,7 +1357,7 @@ function showSellModal(id){
           <label style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block">Sale Price (Rs) — Edit for bargain</label>
           <input class="qty-input" type="number" id="sell-price" value="${defaultSalePrice}" inputmode="numeric" oninput="updateSellMargin(${purchasePrice})"/>
         </div>
-        <div class="bargain-hint" id="sell-margin-hint">Margin: +${fmt(defaultSalePrice-purchasePrice)} per unit</div>
+        <div class="bargain-hint" id="sell-margin-hint" style="display:none"></div>
         <div style="height:10px"></div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Select wallet where payment goes:</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px" id="sell-wallet-sel">
