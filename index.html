@@ -491,7 +491,9 @@ function renderInvItems(){
   if(searchQ)items=items.filter(i=>i.name.toLowerCase().includes(searchQ.toLowerCase()));
   if(filterCat)items=items.filter(i=>i.category===filterCat);
   items.sort((a,b)=>parseInt(a.quantity)-parseInt(b.quantity));
-  items.map(item=>{
+  listEl.innerHTML=!items.length
+    ?`<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">No items found</div></div>`
+    :items.map(item=>{
       const qty=parseInt(item.quantity),alertQty=parseInt(item.lowStockAlert||5);
       const qtyClass=qty===0?'out':qty<=alertQty?'low':'ok';
       const profit=parseFloat(item.salePrice)-parseFloat(item.purchasePrice);
