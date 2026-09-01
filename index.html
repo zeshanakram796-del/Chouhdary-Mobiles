@@ -252,14 +252,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <div class="app">
   <div class="header">
     <div class="header-top">
-      <div><div class="shop-name">Chouhdary Mobiles</div><div class="shop-sub">POS &amp; Inventory <span style="font-size:9px;color:#c8f564;opacity:0.7">v3.5</span></div></div>
+      <div><div class="shop-name">Chouhdary Mobiles</div><div class="shop-sub">POS &amp; Inventory <span style="font-size:9px;color:#c8f564;opacity:0.7">v3.6</span></div></div>
       <button class="sync-btn ok" id="syncBtn" onclick="syncAll()"><span class="sdot"></span><span id="syncTxt">Synced</span></button>
     </div>
     <div class="cards">
       <div class="card"><div class="card-label">Today Customers</div><div class="card-val" id="s-customers">--</div></div>
       <div class="card"><div class="card-label">Today Profit</div><div class="card-val green" id="s-today">--</div></div>
       <div class="card"><div class="card-label">Udhaar</div><div class="card-val orange" id="s-udhaar">--</div></div>
-      <div class="card"><div class="card-label">Udhaar Paid</div><div class="card-val blue" id="s-usb">--</div></div>
+      <div class="card"><div class="card-label">USB / Repair</div><div class="card-val blue" id="s-usb">--</div></div>
       <div class="card"><div class="card-label">Wallets</div><div class="card-val purple" id="s-wallet">--</div></div>
       <div class="card"><div class="card-label">Expenses</div><div class="card-val red" id="s-expense">--</div></div>
     </div>
@@ -395,7 +395,7 @@ function updateSummary(){
   const today=todayStr();
   const todayProfit=getDailyStats().netProfit;
   document.getElementById('s-today').textContent=fmtS(todayProfit);
-  const usbProfit=usbJobs.filter(j=>!String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  const usbProfit=usbJobs.reduce((a,j)=>a+parseFloat(j.profit||0),0);
   document.getElementById('s-usb').textContent=fmtS(usbProfit);
   const walletProfit=walletTx.reduce((a,t)=>a+parseFloat(t.profit||0),0);
   document.getElementById('s-wallet').textContent=fmtS(walletProfit);
