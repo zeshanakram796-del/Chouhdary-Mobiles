@@ -330,7 +330,7 @@ function fmt(n){return 'Rs '+Math.round(n||0).toLocaleString();}
 function fmtS(n){return Math.round(n||0).toLocaleString();}
 function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 // Normalize any date value to YYYY-MM-DD string for comparison
-function normDate(v){if(!v)return '';if(v instanceof Date){return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');}return String(v).slice(0,10);}
+function normDate(v){if(!v)return '';if(v instanceof Date){return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');}const s=String(v);if(s.includes('T')){const d=new Date(s);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}return s.slice(0,10);}
 function catEmoji(cat){return CAT_EMOJI[cat]||'📦';}
 function dayLabel(date){
   const d=new Date(date+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);
