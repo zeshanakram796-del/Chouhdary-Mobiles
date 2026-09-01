@@ -1139,8 +1139,8 @@ async function deleteSale(id){
   if(inv){inv.quantity=(parseInt(inv.quantity)||0)+(parseInt(s.quantity)||1);}
   sales=sales.filter(x=>x.id!=id);
   saveLocal();updateSummary();renderTab();toast('Deleting...');
-  try{await apiFetch({action:'deleteSale',id});toast('Sale deleted ✅');}
-  catch(e){toast('Deleted locally — will sync later ⚠️');}
+  try{const r=await apiFetch({action:'deleteSale',id});if(!r.success)throw new Error(r.error||'fail');toast('Sale deleted ✅');}
+  catch(er){toast('❌ Sheet delete failed — check Code.gs deployment');}
 }
 
 async function deleteUSBJob(id){
@@ -1149,8 +1149,8 @@ async function deleteUSBJob(id){
   if(!confirm(`Delete job: ${j.desc} (${fmt(j.charged)})?\nThis cannot be undone.`))return;
   usbJobs=usbJobs.filter(x=>x.id!=id);
   saveLocal();updateSummary();renderTab();toast('Deleting...');
-  try{await apiFetch({action:'deleteUSB',id});toast('Job deleted ✅');}
-  catch(e){toast('Deleted locally — will sync later ⚠️');}
+  try{const r=await apiFetch({action:'deleteUSB',id});if(!r.success)throw new Error(r.error||'fail');toast('Job deleted ✅');}
+  catch(er){toast('❌ Sheet delete failed — check Code.gs deployment');}
 }
 
 async function deleteExpense(id){
@@ -1159,8 +1159,8 @@ async function deleteExpense(id){
   if(!confirm(`Delete expense: ${e.desc||e.category} (${fmt(e.amount)})?\nThis cannot be undone.`))return;
   expenses=expenses.filter(x=>x.id!=id);
   saveLocal();updateSummary();renderTab();toast('Deleting...');
-  try{await apiFetch({action:'deleteExpense',id});toast('Expense deleted ✅');}
-  catch(e){toast('Deleted locally — will sync later ⚠️');}
+  try{const r=await apiFetch({action:'deleteExpense',id});if(!r.success)throw new Error(r.error||'fail');toast('Expense deleted ✅');}
+  catch(er){toast('❌ Sheet delete failed — check Code.gs deployment');}
 }
 
 async function deleteWalletTx(id){
@@ -1169,8 +1169,8 @@ async function deleteWalletTx(id){
   if(!confirm(`Delete ${t.wallet} entry: ${t.desc} (${fmt(t.profit)})?\nThis cannot be undone.`))return;
   walletTx=walletTx.filter(x=>x.id!=id);
   saveLocal();updateSummary();renderTab();toast('Deleting...');
-  try{await apiFetch({action:'deleteWallet',id});toast('Entry deleted ✅');}
-  catch(e){toast('Deleted locally — will sync later ⚠️');}
+  try{const r=await apiFetch({action:'deleteWallet',id});if(!r.success)throw new Error(r.error||'fail');toast('Entry deleted ✅');}
+  catch(er){toast('❌ Sheet delete failed — check Code.gs deployment');}
 }
 
 // ── MONTHLY STATS ──
