@@ -329,6 +329,8 @@ function toast(msg,dur=2500){const el=document.getElementById('toast');el.textCo
 function fmt(n){return 'Rs '+Math.round(n||0).toLocaleString();}
 function fmtS(n){return Math.round(n||0).toLocaleString();}
 function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+// Normalize any date value to YYYY-MM-DD string for comparison
+function normDate(v){if(!v)return '';if(v instanceof Date){return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');}return String(v).slice(0,10);}
 function catEmoji(cat){return CAT_EMOJI[cat]||'📦';}
 function dayLabel(date){
   const d=new Date(date+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);
@@ -405,24 +407,25 @@ function updateSummary(){
 
 function getDailyStats(){
   const today=todayStr();
-  const todaySalesList=sales.filter(s=>s.date===today);
+  const isToday=v=>normDate(v)===today;
+  const todaySalesList=sales.filter(s=>isToday(s.date));
   const productRevenue=todaySalesList.reduce((a,s)=>a+parseFloat(s.totalSale||0),0);
   const productProfit=todaySalesList.reduce((a,s)=>a+parseFloat(s.totalProfit||0),0);
 
   const customerSet=new Set();
   todaySalesList.forEach(s=>{if(s.customerName&&s.customerName.trim())customerSet.add(s.customerName.trim().toLowerCase());});
-  usbJobs.filter(j=>j.date===today).forEach(j=>{if(j.customer&&j.customer.trim())customerSet.add(j.customer.trim().toLowerCase());});
-  walletTx.filter(t=>t.date===today).forEach(t=>{if(t.desc&&t.desc.trim()&&t.desc!=='Commission')customerSet.add(t.desc.trim().toLowerCase());});
+  usbJobs.filter(j=>isToday(j.date)).forEach(j=>{if(j.customer&&j.customer.trim())customerSet.add(j.customer.trim().toLowerCase());});
+  walletTx.filter(t=>isToday(t.date)).forEach(t=>{if(t.desc&&t.desc.trim()&&t.desc!=='Commission')customerSet.add(t.desc.trim().toLowerCase());});
   const namedCount=customerSet.size;
   const anonymousSales=todaySalesList.filter(s=>!s.customerName||!s.customerName.trim()).length;
-  const anonymousJobs=usbJobs.filter(j=>j.date===today&&(!j.customer||!j.customer.trim())).length;
+  const anonymousJobs=usbJobs.filter(j=>isToday(j.date)&&(!j.customer||!j.customer.trim())).length;
   const totalCustomers=namedCount+anonymousSales+anonymousJobs;
 
-  const usbOnlyToday=usbJobs.filter(j=>j.date===today&&!String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0);
-  const repairToday=usbJobs.filter(j=>j.date===today&&String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0);
-  const walletToday=walletTx.filter(t=>t.date===today).reduce((a,t)=>a+parseFloat(t.profit||0),0);
-  const expToday=expenses.filter(e=>e.date===today).reduce((a,e)=>a+parseFloat(e.amount||0),0);
-  const finExpToday=finExpenses.filter(e=>e.date===today).reduce((a,e)=>a+parseFloat(e.amount||0),0);
+  const usbOnlyToday=usbJobs.filter(j=>isToday(j.date)&&!String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  const repairToday=usbJobs.filter(j=>isToday(j.date)&&String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  const walletToday=walletTx.filter(t=>isToday(t.date)).reduce((a,t)=>a+parseFloat(t.profit||0),0);
+  const expToday=expenses.filter(e=>isToday(e.date)).reduce((a,e)=>a+parseFloat(e.amount||0),0);
+  const finExpToday=finExpenses.filter(e=>isToday(e.date)).reduce((a,e)=>a+parseFloat(e.amount||0),0);
   const netProfit=productProfit+repairToday+usbOnlyToday+walletToday-expToday-finExpToday;
   return {productRevenue,productProfit,totalCustomers,usbToday:usbOnlyToday,repairToday,walletToday,expToday,finExpToday,netProfit,txCount:todaySalesList.length};
 }
