@@ -1128,42 +1128,46 @@ function renderSales(c){
   );
 }
 
-function deleteSale(id){
+async function deleteSale(id){
   const s=sales.find(x=>x.id==id);
   if(!s)return;
   if(!confirm(`Delete sale: ${s.itemName} (${fmt(s.totalSale)})?\nThis cannot be undone.`))return;
   const inv=inventory.find(i=>i.id==s.itemId||i.name===s.itemName);
   if(inv){inv.quantity=(parseInt(inv.quantity)||0)+(parseInt(s.quantity)||1);}
   sales=sales.filter(x=>x.id!=id);
-  saveLocal();updateSummary();renderTab();toast('Sale deleted ✅');
-  fetch(API+'?action=deleteSale&id='+id).catch(()=>{});
+  saveLocal();updateSummary();renderTab();toast('Deleting...');
+  try{await apiFetch({action:'deleteSale',id});toast('Sale deleted ✅');}
+  catch(e){toast('Deleted locally — will sync later ⚠️');}
 }
 
-function deleteUSBJob(id){
+async function deleteUSBJob(id){
   const j=usbJobs.find(x=>x.id==id);
   if(!j)return;
   if(!confirm(`Delete job: ${j.desc} (${fmt(j.charged)})?\nThis cannot be undone.`))return;
   usbJobs=usbJobs.filter(x=>x.id!=id);
-  saveLocal();updateSummary();renderTab();toast('Job deleted ✅');
-  fetch(API+'?action=deleteUSB&id='+id).catch(()=>{});
+  saveLocal();updateSummary();renderTab();toast('Deleting...');
+  try{await apiFetch({action:'deleteUSB',id});toast('Job deleted ✅');}
+  catch(e){toast('Deleted locally — will sync later ⚠️');}
 }
 
-function deleteExpense(id){
+async function deleteExpense(id){
   const e=expenses.find(x=>x.id==id);
   if(!e)return;
   if(!confirm(`Delete expense: ${e.desc||e.category} (${fmt(e.amount)})?\nThis cannot be undone.`))return;
   expenses=expenses.filter(x=>x.id!=id);
-  saveLocal();updateSummary();renderTab();toast('Expense deleted ✅');
-  fetch(API+'?action=deleteExpense&id='+id).catch(()=>{});
+  saveLocal();updateSummary();renderTab();toast('Deleting...');
+  try{await apiFetch({action:'deleteExpense',id});toast('Expense deleted ✅');}
+  catch(e){toast('Deleted locally — will sync later ⚠️');}
 }
 
-function deleteWalletTx(id){
+async function deleteWalletTx(id){
   const t=walletTx.find(x=>x.id==id);
   if(!t)return;
   if(!confirm(`Delete ${t.wallet} entry: ${t.desc} (${fmt(t.profit)})?\nThis cannot be undone.`))return;
   walletTx=walletTx.filter(x=>x.id!=id);
-  saveLocal();updateSummary();renderTab();toast('Entry deleted ✅');
-  fetch(API+'?action=deleteWallet&id='+id).catch(()=>{});
+  saveLocal();updateSummary();renderTab();toast('Deleting...');
+  try{await apiFetch({action:'deleteWallet',id});toast('Entry deleted ✅');}
+  catch(e){toast('Deleted locally — will sync later ⚠️');}
 }
 
 // ── MONTHLY STATS ──
@@ -1476,17 +1480,36 @@ async function confirmSell(id){
   if(!qty||qty<1){toast('Enter valid quantity ⚠️');return;}
   document.getElementById('modal').innerHTML='';
   toast('Recording sale...');
+  const totalSaleAmt=actualSalePrice*qty;
+  const purchaseP=parseFloat(item?.purchasePrice||0);
+  const totalProfit=(actualSalePrice-purchaseP)*qty;
   try{
     const d=await apiPost({action:'addSale',itemId:id,quantity:qty,customerName,salePrice:actualSalePrice});
     if(d.success){
-      const totalSaleAmt=actualSalePrice*qty;
       if(sellWallet==='cash')addToCashBalance(totalSaleAmt,'Sale: '+(item?.name||'Item')+' x'+qty+(customerName?' to '+customerName:''));
       else if(sellWallet==='jazz')addToJazzBalance(totalSaleAmt,'Sale: '+(item?.name||'Item')+' x'+qty+(customerName?' to '+customerName:''));
       else if(sellWallet==='easy')addToEasyBalance(totalSaleAmt,'Sale: '+(item?.name||'Item')+' x'+qty+(customerName?' to '+customerName:''));
+      else if(sellWallet==='bank')addToBankBalance(totalSaleAmt,'Sale: '+(item?.name||'Item')+' x'+qty+(customerName?' to '+customerName:''));
       await syncAll();toast('Sale recorded ✅');
+    } else {
+      // Save locally if backend fails
+      if(item){item.quantity=Math.max(0,parseInt(item.quantity)-qty);}
+      sales.push({id:Date.now(),date:todayStr(),itemId:id,itemName:item?.name||'',category:item?.category||'',quantity:qty,purchasePrice:purchaseP,salePrice:actualSalePrice,totalSale:totalSaleAmt,totalProfit,customerName});
+      if(sellWallet==='cash')addToCashBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+      else if(sellWallet==='jazz')addToJazzBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+      else if(sellWallet==='easy')addToEasyBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+      else if(sellWallet==='bank')addToBankBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+      saveLocal();updateSummary();renderTab();toast('Saved locally ⚠️ — '+(d.error||'Sync failed'));
     }
-    else toast(d.error||'Failed ❌');
-  }catch(e){toast('Failed ❌');}
+  }catch(e){
+    if(item){item.quantity=Math.max(0,parseInt(item.quantity)-qty);}
+    sales.push({id:Date.now(),date:todayStr(),itemId:id,itemName:item?.name||'',category:item?.category||'',quantity:qty,purchasePrice:purchaseP,salePrice:actualSalePrice,totalSale:totalSaleAmt,totalProfit,customerName});
+    if(sellWallet==='cash')addToCashBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+    else if(sellWallet==='jazz')addToJazzBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+    else if(sellWallet==='easy')addToEasyBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+    else if(sellWallet==='bank')addToBankBalance(totalSaleAmt,'Sale: '+(item?.name||'Item'));
+    saveLocal();updateSummary();renderTab();toast('Saved locally ⚠️');
+  }
 }
 
 async function confirmRestock(id){
