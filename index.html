@@ -252,7 +252,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <div class="app">
   <div class="header">
     <div class="header-top">
-      <div><div class="shop-name">Chouhdary Mobiles</div><div class="shop-sub">POS &amp; Inventory <span style="font-size:9px;color:#c8f564;opacity:0.7">v3.6</span></div></div>
+      <div><div class="shop-name">Chouhdary Mobiles</div><div class="shop-sub">POS &amp; Inventory <span style="font-size:9px;color:#c8f564;opacity:0.7">v3.8</span></div></div>
       <button class="sync-btn ok" id="syncBtn" onclick="syncAll()"><span class="sdot"></span><span id="syncTxt">Synced</span></button>
     </div>
     <div class="cards">
@@ -265,8 +265,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     </div>
   </div>
   <div class="nav" id="mainNav">
-    <button class="nav-btn active" onclick="setTab('inventory',this)">📦 Stock</button>
-    <button class="nav-btn" onclick="setTab('sell',this)">💰 Sell</button>
+    <button class="nav-btn active" onclick="setTab('sell',this)">💰 Sell</button>
     <button class="nav-btn" onclick="setTab('udhaar',this)">📒 Udhaar</button>
     <button class="nav-btn" onclick="setTab('usb',this)">🔧 USB</button>
     <button class="nav-btn" onclick="setTab('wallets',this)">📲 Wallets</button>
@@ -274,6 +273,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <button class="nav-btn" onclick="setTab('balance',this)">💼 Balance</button>
     <button class="nav-btn" onclick="setTab('sales',this)">📋 Sales</button>
     <button class="nav-btn" onclick="setTab('reports',this)">📊 Reports</button>
+    <button class="nav-btn" onclick="setTab('inventory',this)">📦 Stock</button>
     <button class="nav-btn" onclick="setTab('addItem',this)">＋ Add</button>
   </div>
   <div class="content" id="content"></div>
@@ -292,7 +292,7 @@ let inventory=[], sales=[], reports={}, usbJobs=[], walletTx=[], udhaarList=[], 
 let balances={cash:0, jazz:0, easy:0, bank:0};
 let balanceTx=[];
 let finExpenses=[];
-let activeTab='inventory', searchQ='', filterCat='', isSyncing=false;
+let activeTab='sell', searchQ='', filterCat='', isSyncing=false;
 let revealTimers={};
 
 function saveLocal(){
@@ -366,26 +366,43 @@ function setSyncStatus(s,t){
 async function syncAll(){
   if(isSyncing)return;
   isSyncing=true;setSyncStatus('warn','Syncing...');
+  // FAST PATH: one call returns everything
   try{
-    const[invD,salesD,repD,usbD,walletD,udhaarD,expD]=await Promise.all([
-      apiFetch({action:'getInventory'}),
-      apiFetch({action:'getSales'}),
-      apiFetch({action:'getReports'}),
-      apiFetch({action:'getUSB'}),
-      apiFetch({action:'getWallets'}),
-      apiFetch({action:'getUdhaar'}),
-      apiFetch({action:'getExpenses'})
-    ]);
-    if(invD.success)inventory=invD.items||[];
-    if(salesD.success)sales=salesD.sales||[];
-    if(repD.success)reports=repD;
-    if(usbD.success)usbJobs=usbD.jobs||[];
-    if(walletD.success)walletTx=walletD.txs||[];
-    if(udhaarD.success)udhaarList=udhaarD.entries||[];
-    if(expD.success)expenses=expD.exps||[];
-    saveLocal();updateSummary();renderTab();setSyncStatus('ok','Synced ✓');
-    fetchFinExpenses();
-  }catch(e){setSyncStatus('warn','Offline');toast('Sync failed ⚠️');}
+    const all=await apiFetch({action:'getAll'});
+    if(all&&all.success&&all.items!==undefined){
+      inventory=all.items||[];
+      sales=all.sales||[];
+      reports=all.reports||reports;
+      usbJobs=all.jobs||[];
+      walletTx=all.txs||[];
+      udhaarList=all.entries||[];
+      expenses=all.exps||[];
+      saveLocal();updateSummary();renderTab();setSyncStatus('ok','Synced ✓');
+      fetchFinExpenses();isSyncing=false;return;
+    }
+  }catch(e){/* fall back to multi-call below */}
+  // FALLBACK: older backend without getAll — 7 separate calls
+  const acts=['getInventory','getSales','getReports','getUSB','getWallets','getUdhaar','getExpenses'];
+  const res=await Promise.allSettled(acts.map(a=>apiFetch({action:a})));
+  const get=i=>res[i].status==='fulfilled'?res[i].value:null;
+  let okCount=0;
+  const invD=get(0),salesD=get(1),repD=get(2),usbD=get(3),walletD=get(4),udhaarD=get(5),expD=get(6);
+  if(invD&&invD.success){inventory=invD.items||[];okCount++;}
+  if(salesD&&salesD.success){sales=salesD.sales||[];okCount++;}
+  if(repD&&repD.success){reports=repD;okCount++;}
+  if(usbD&&usbD.success){usbJobs=usbD.jobs||[];okCount++;}
+  if(walletD&&walletD.success){walletTx=walletD.txs||[];okCount++;}
+  if(udhaarD&&udhaarD.success){udhaarList=udhaarD.entries||[];okCount++;}
+  if(expD&&expD.success){expenses=expD.exps||[];okCount++;}
+  saveLocal();updateSummary();renderTab();
+  if(okCount===acts.length){setSyncStatus('ok','Synced ✓');}
+  else if(okCount>0){setSyncStatus('ok','Synced ✓');toast(okCount+'/'+acts.length+' loaded');}
+  else{
+    setSyncStatus('warn','Offline');
+    const firstErr=res.find(r=>r.status==='rejected');
+    toast('Offline: '+(firstErr?(firstErr.reason.message||firstErr.reason):'no data'),5000);
+  }
+  fetchFinExpenses();
   isSyncing=false;
 }
 
@@ -457,7 +474,8 @@ function renderDailyBanner(){
 function setTab(tab,btn){
   activeTab=tab;searchQ='';filterCat='';
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
+  if(btn){btn.classList.add('active');}
+  else{document.querySelectorAll('.nav-btn').forEach(b=>{const oc=b.getAttribute('onclick')||'';if(oc.indexOf("'"+tab+"'")>-1)b.classList.add('active');});}
   // Clear content so scaffold is rebuilt fresh for new tab
   document.getElementById('content').innerHTML='';
   renderTab();
@@ -1362,9 +1380,8 @@ function showSellModal(id){
         </div>
         <div class="form-field" style="margin-bottom:6px">
           <label style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block">Sale Price (Rs) — Edit for bargain</label>
-          <input class="qty-input" type="number" id="sell-price" value="${defaultSalePrice}" inputmode="numeric" oninput="updateSellMargin(${purchasePrice})"/>
+          <input class="qty-input" type="number" id="sell-price" value="${defaultSalePrice}" inputmode="numeric"/>
         </div>
-        <div class="bargain-hint" id="sell-margin-hint" style="display:none"></div>
         <div style="height:10px"></div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Select wallet where payment goes:</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px" id="sell-wallet-sel">
@@ -1469,7 +1486,7 @@ async function addItem(){
   toast('Adding...');
   try{
     const d=await apiPost({action:'addItem',name,category:cat,purchasePrice:buy,salePrice:sell,quantity:qty,lowStockAlert:alert});
-    if(d.success){await syncAll();setTab('inventory',document.querySelectorAll('.nav-btn')[0]);toast('Item added ✅');}
+    if(d.success){await syncAll();setTab('inventory');toast('Item added ✅');}
   }catch(e){toast('Failed ❌');}
 }
 
