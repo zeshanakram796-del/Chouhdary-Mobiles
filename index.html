@@ -48,7 +48,8 @@
 html, body { height: 100%; background: var(--bg); color: var(--t); font-family: var(--fn); overscroll-behavior: none; }
 
 /* ── PIN SCREEN ── */
-#pin-overlay { position: fixed; inset: 0; z-index: 999; }
+#pin-overlay { position: fixed; inset: 0; z-index: 999; display: none; }
+#pin-overlay.active { display: block; }
 .pin-wrap {
   height: 100%; display: flex; flex-direction: column;
   align-items: center; justify-content: center; padding: 32px 24px;
@@ -644,7 +645,8 @@ function initApp(){
 function showPinScreen(mode){
   pinMode=mode;pinEntry='';
   const isEnter=mode==='enter',isConfirm=mode==='confirm';
-  document.getElementById('pin-overlay').innerHTML=`
+  const ov=document.getElementById('pin-overlay');ov.classList.add('active');
+  ov.innerHTML=`
     <div class="pin-screen">
       <div class="pin-logo">📱</div>
       <div class="pin-shopname">Chouhdary Mobiles</div>
@@ -669,12 +671,12 @@ function updDots(){for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);
 function submitPin(){
   const saved=localStorage.getItem('cm_pin');
   if(pinMode==='enter'){
-    if(pinEntry===saved){document.getElementById('pin-overlay').innerHTML='';launchApp();}
+    if(pinEntry===saved){const ov=document.getElementById('pin-overlay');ov.innerHTML='';ov.classList.remove('active');launchApp();}
     else{pinErr('Wrong PIN. Try again.');}
   }else if(pinMode==='set'){
     pinSetTemp=pinEntry;showPinScreen('confirm');
   }else{
-    if(pinEntry===pinSetTemp){localStorage.setItem('cm_pin',pinEntry);document.getElementById('pin-overlay').innerHTML='';toast('PIN set ✅');if(activeTab==='settings')renderTab();}
+    if(pinEntry===pinSetTemp){localStorage.setItem('cm_pin',pinEntry);const ov=document.getElementById('pin-overlay');ov.innerHTML='';ov.classList.remove('active');toast('PIN set ✅');if(activeTab==='settings')renderTab();}
     else{pinErr('PINs do not match.');setTimeout(()=>showPinScreen('set'),900);}
   }
 }
@@ -683,7 +685,7 @@ function pinErr(msg){
   for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);if(d){d.className='pin-dot error';d.style.animation='shake .3s';}}
   setTimeout(()=>{pinEntry='';updDots();const e=document.getElementById('pin-err');if(e)e.textContent='';},850);
 }
-function forgotPin(){if(confirm('Reset PIN? App will open without PIN.')){localStorage.removeItem('cm_pin');document.getElementById('pin-overlay').innerHTML='';launchApp();}}
+function forgotPin(){if(confirm('Reset PIN? App will open without PIN.')){localStorage.removeItem('cm_pin');const ov=document.getElementById('pin-overlay');ov.innerHTML='';ov.classList.remove('active');launchApp();}}
 function launchApp(){document.getElementById('app').style.display='flex';loadLocal();updateSummary();renderTab();syncAll();fetchFinExpenses();setTimeout(initPullToRefresh,600);}
 
 // ── STORAGE ──
