@@ -448,6 +448,61 @@ html, body { height: 100%; background: var(--bg); color: var(--t); font-family: 
 }
 .stab.on { background: var(--ac2); color: var(--ac); border-color: var(--ac3); }
 
+/* ── NEW FEATURE STYLES ── */
+/* Skeleton shimmer */
+.skel { background: linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: var(--rad); margin-bottom: 10px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* Hero card */
+.hero { background: linear-gradient(145deg,#0c1a06 0%,#080f1a 100%); border: 1px solid rgba(170,255,68,.22); border-radius: var(--rad); padding: 20px; margin-bottom: 14px; position: relative; overflow: hidden; }
+.hero::before { content:''; position:absolute; top:-40px; right:-30px; width:130px; height:130px; background:radial-gradient(circle,rgba(170,255,68,.09),transparent 70%); pointer-events:none; }
+.hero-lbl { font-size:10px; color:var(--mu); text-transform:uppercase; letter-spacing:.1em; font-weight:700; margin-bottom:6px; }
+.hero-profit { font-size:40px; font-weight:900; font-family:var(--mo); color:var(--ac); letter-spacing:-2px; line-height:1.1; }
+.hero-stats { display:flex; gap:22px; margin-top:16px; }
+.hs { display:flex; flex-direction:column; }
+.hs-n { font-size:15px; font-weight:700; font-family:var(--mo); }
+.hs-l { font-size:10px; color:var(--mu); text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin-top:1px; }
+.goal-wrap { margin-top:14px; padding-top:14px; border-top:1px solid rgba(170,255,68,.12); }
+.goal-track { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; margin-bottom:5px; }
+.goal-fill { height:5px; background:var(--ac); border-radius:3px; transition:width .5s ease; }
+.goal-meta { display:flex; justify-content:space-between; font-size:11px; color:var(--t2); }
+.goal-pct { font-weight:700; color:var(--ac); }
+
+/* Quick sell */
+.qs { margin-bottom:14px; }
+.qs-hd { font-size:10px; color:var(--mu); text-transform:uppercase; letter-spacing:.08em; font-weight:700; margin-bottom:8px; }
+.qs-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
+.qs-row::-webkit-scrollbar { display:none; }
+.qs-chip { flex-shrink:0; background:var(--s2); border:1px solid var(--b); border-radius:24px; padding:8px 14px; display:flex; align-items:center; gap:7px; cursor:pointer; transition:all .12s; }
+.qs-chip:active { background:var(--s3); transform:scale(.93); }
+.qs-em { font-size:15px; }
+.qs-name { font-size:12px; font-weight:600; max-width:90px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qs-pr { font-size:11px; color:var(--ac); font-family:var(--mo); font-weight:700; }
+
+/* Pull to refresh */
+.ptr { text-align:center; font-size:12px; color:var(--mu); max-height:0; overflow:hidden; transition:max-height .25s,padding .25s; }
+.ptr.show { max-height:48px; padding:12px 0; }
+.ptr-spin { display:inline-block; font-size:18px; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Low stock dot on More nav */
+.nav-dot { position:absolute; top:8px; right:calc(50% - 18px); width:7px; height:7px; background:var(--rd); border-radius:50%; border:2px solid var(--s1); }
+
+/* 6-month chart */
+.chart6-bars { display:flex; align-items:flex-end; gap:6px; height:72px; margin-bottom:6px; }
+.c6col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+.c6bar { width:100%; border-radius:4px 4px 0 0; min-height:3px; }
+.c6bar.cur { background:var(--ac); }
+.c6bar.old { background:var(--s3); }
+.c6lbl { font-size:9px; color:var(--mu); font-weight:600; }
+.c6val { font-size:9px; color:var(--t2); font-family:var(--mo); white-space:nowrap; }
+
+/* Swipe-to-delete */
+.sw-wrap { position:relative; overflow:hidden; border-radius:var(--rad); margin-bottom:9px; }
+.sw-del-bg { position:absolute; right:0; top:0; bottom:0; background:var(--rd2); display:flex; align-items:center; justify-content:center; width:72px; color:var(--rd); font-size:22px; cursor:pointer; }
+.sw-inner { position:relative; z-index:1; border-radius:var(--rad); }
+.sw-inner.snap { transition:transform .2s ease; }
+
 /* Modal */
 .modal-bg {
   position: fixed; inset: 0; background: rgba(0,0,0,.7);
@@ -633,7 +688,7 @@ function pinErr(msg){
   setTimeout(()=>{pinEntry='';updDots();const e=document.getElementById('pin-err');if(e)e.textContent='';},850);
 }
 function forgotPin(){if(confirm('Reset PIN? App will open without PIN.')){localStorage.removeItem('cm_pin');document.getElementById('pin-overlay').innerHTML='';launchApp();}}
-function launchApp(){document.getElementById('app').style.display='flex';loadLocal();updateSummary();renderTab();syncAll();fetchFinExpenses();}
+function launchApp(){document.getElementById('app').style.display='flex';loadLocal();updateSummary();renderTab();syncAll();fetchFinExpenses();setTimeout(initPullToRefresh,600);}
 
 // ── STORAGE ──
 function saveLocal(){
@@ -666,6 +721,7 @@ function loadLocal(){
     finExpenses=JSON.parse(localStorage.getItem('cm_finExp')||'[]');
     purchases=JSON.parse(localStorage.getItem('cm_purchases')||'[]');
   }catch(e){}
+  setTimeout(updateLowStockBadge,100);
 }
 
 // ── UTILS ──
@@ -945,10 +1001,35 @@ function renderSellItems(){
       </div>`;
     }).join('');
 }
+function buildHeroCard(){
+  const today=new Date().toLocaleDateString('en-GB');
+  const ts=sales.filter(s=>s.date===today);
+  const tp=ts.reduce((a,s)=>a+parseFloat(s.profit||0),0);
+  const tr=ts.reduce((a,s)=>a+parseFloat(s.amount||0),0);
+  const tc=new Set(ts.map(s=>s.customer||'x')).size;
+  const goal=parseFloat(localStorage.getItem('cm_daily_goal'))||0;
+  const pct=goal>0?Math.min(100,Math.round(tp/goal*100)):0;
+  return `<div class="hero" id="sell-hero">
+    <div class="hero-lbl">Today's Profit</div>
+    <div class="hero-profit">${fmt(tp)}</div>
+    <div class="hero-stats">
+      <div class="hs"><div class="hs-n">${fmt(tr)}</div><div class="hs-l">Revenue</div></div>
+      <div class="hs"><div class="hs-n" style="color:var(--bl)">${ts.length}</div><div class="hs-l">Sales</div></div>
+      <div class="hs"><div class="hs-n" style="color:var(--pu)">${tc}</div><div class="hs-l">Customers</div></div>
+    </div>
+    ${goal>0?`<div class="goal-wrap"><div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div><div class="goal-meta"><span>${fmt(tp)} of ${fmt(goal)} goal</span><span class="goal-pct">${pct}%</span></div></div>`:''}
+  </div>`;
+}
+function buildQuickSell(){
+  let recent=[];try{recent=JSON.parse(localStorage.getItem('cm_recent_sold')||'[]');}catch{}
+  const items=recent.map(id=>inventory.find(i=>Number(i.id)===id)).filter(it=>it&&parseInt(it.quantity)>0);
+  if(!items.length)return '';
+  return `<div class="qs"><div class="qs-hd">Quick Sell</div><div class="qs-row">${items.map(it=>`<div class="qs-chip" onclick="showSellModal(${it.id})"><span class="qs-em">${catEmoji(it.category)}</span><span class="qs-name">${escHtml(it.name)}</span><span class="qs-pr">${fmt(it.salePrice)}</span></div>`).join('')}</div></div>`;
+}
 function renderSell(c){
   const catOpts=['All',...CATS].map(cat=>`<option value="${cat==='All'?'':cat}">${cat}</option>`).join('');
   if(!document.getElementById('sell-list')){
-    c.innerHTML=`
+    c.innerHTML=buildHeroCard()+buildQuickSell()+`
       <div class="search-bar">
         <input class="search-in" id="sell-search" placeholder="Search to sell..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
         <select class="filter-sel" id="sell-cat-sel">${catOpts}</select>
@@ -957,6 +1038,7 @@ function renderSell(c){
     document.getElementById('sell-search').addEventListener('input',function(){searchQ=this.value;renderSellItems();});
     document.getElementById('sell-cat-sel').addEventListener('change',function(){filterCat=this.value;renderSellItems();});
   }else{
+    const h=document.getElementById('sell-hero');if(h)h.outerHTML=buildHeroCard();
     const el=document.getElementById('sell-search');if(el&&document.activeElement!==el)el.value=searchQ;
     const sel=document.getElementById('sell-cat-sel');if(sel)sel.innerHTML=catOpts;
   }
@@ -1104,7 +1186,7 @@ function renderUdhaar(c){
       <button class="btn warning" onclick="addUdhaar()">✓ Add Udhaar</button>
     </div>
     ${!sorted.length?`<div class="empty"><div class="empty-icon">📒</div><div class="empty-text">No udhaar recorded</div></div>`:
-    sorted.map(u=>`<div class="ud ${u.status==='paid'?'paid':''}">
+    sorted.map(u=>`<div class="sw-wrap" data-del="deleteUdhaar(${u.id})"><div class="sw-del-bg">🗑️</div><div class="sw-inner ud ${u.status==='paid'?'paid':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div><div class="ud-name">👤 ${escHtml(u.customer)}</div><div class="ud-meta">${u.desc?escHtml(u.desc)+' · ':''}${u.date}</div></div>
         <div style="text-align:right"><div class="ud-amt ${u.status==='paid'?'p':''}">${fmt(u.amount)}</div><div class="ud-badge ${u.status==='paid'?'paid':'pen'}">${u.status==='paid'?'✓ Paid':'Pending'}</div></div>
@@ -1113,7 +1195,8 @@ function renderUdhaar(c){
         <div style="font-size:11px;color:var(--mu)">Payment received?</div>
         <button class="act" style="background:var(--gr2);color:var(--gr);border-color:rgba(46,213,115,0.2)" onclick="markUdhaarPaid(${u.id})">✓ Mark Paid</button>
       </div>`:''}
-    </div>`).join('')}`;
+    </div></div>`).join('')}`;
+  setTimeout(applySwipeDel,50);
 }
 async function addUdhaar(){
   const customer=document.getElementById('u-customer')?.value.trim();
@@ -1134,6 +1217,12 @@ async function markUdhaarPaid(id){
     if(d.success){await syncAll();toast('Udhaar cleared ✅');}
     else{const u=udhaarList.find(u=>Number(u.id)===Number(id));if(u)u.status='paid';saveLocal();updateSummary();renderTab();toast('Updated locally ⚠️');}
   }catch(e){const u=udhaarList.find(u=>Number(u.id)===Number(id));if(u)u.status='paid';saveLocal();updateSummary();renderTab();toast('Updated locally ⚠️');}
+}
+
+async function deleteUdhaar(id){
+  udhaarList=udhaarList.filter(u=>Number(u.id)!==Number(id));
+  saveLocal();updateSummary();renderTab();toast('Udhaar deleted');
+  try{await apiPost({action:'deleteUdhaar',id});}catch{}
 }
 
 // ── USB ──
@@ -1275,7 +1364,8 @@ function renderKharcha(c){
       <button class="btn danger" onclick="addExpense()">✓ Add Expense</button>
     </div>
     ${!sorted.length?`<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">No expenses recorded yet</div></div>`:
-    sorted.map(e=>`<div class="exp-item"><div class="exp-left"><div class="exp-desc">${escHtml(e.desc||e.category)}</div><div class="exp-meta">${e.date}</div><div class="exp-cat">${escHtml(e.category)}</div></div><div class="exp-right"><div class="exp-amt">−${fmt(e.amount)}</div><button class="del-btn" onclick="deleteExpense(${e.id})">🗑️</button></div></div>`).join('')}`;
+    sorted.map(e=>`<div class="sw-wrap" data-del="deleteExpense(${e.id})"><div class="sw-del-bg">🗑️</div><div class="sw-inner exp"><div class="exp-left"><div class="exp-desc">${escHtml(e.desc||e.category)}</div><div class="exp-meta">${e.date}</div><div class="exp-cat">${escHtml(e.category)}</div></div><div class="exp-right"><div class="exp-amt">−${fmt(e.amount)}</div></div></div></div>`).join('')}`;
+  setTimeout(applySwipeDel,50);
 }
 async function addExpense(){
   const category=document.getElementById('exp-cat')?.value;
@@ -1395,7 +1485,32 @@ async function deleteSale(id){
 }
 
 // ── REPORTS ──
+function build6MonthChart(){
+  const bm=reports.byMonth||{};
+  const now=new Date();
+  const cols=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const lbl=MONTHS[d.getMonth()]+' '+d.getFullYear();
+    const data=bm[lbl]||{};
+    cols.push({short:MONTHS[d.getMonth()].slice(0,3),profit:data.profit||0,cur:i===0});
+  }
+  const maxP=Math.max(...cols.map(c=>c.profit),1);
+  return `<div class="fcard" style="margin-bottom:12px">
+    <div class="ftitle">6-Month Profit Trend</div>
+    <div class="chart6-bars">${cols.map(col=>{
+      const h=Math.max(3,Math.round(col.profit/maxP*64));
+      return `<div class="c6col">
+        <div class="c6val">${col.profit>0?Math.round(col.profit/1000)+'k':''}</div>
+        <div class="c6bar ${col.cur?'cur':'old'}" style="height:${h}px"></div>
+        <div class="c6lbl">${col.short}</div>
+      </div>`;
+    }).join('')}</div>
+  </div>`;
+}
 function renderReports(c){
+  c.innerHTML=Array.from({length:4},(_,i)=>`<div class="skel" style="height:${i===0?90:70}px"></div>`).join('');
+  setTimeout(()=>{
   const tSale=reports.totalSale||0,tProfit=reports.totalProfit||0;
   const byItem=reports.byItem||{},byMonth=reports.byMonth||{};
   const usbPA=usbJobs.reduce((a,j)=>a+parseFloat(j.profit||0),0);
@@ -1414,7 +1529,7 @@ function renderReports(c){
   function walFor(lbl,w){return walletTx.filter(t=>getMonthLabel(getMonthStr(t.date))===lbl&&(w?t.wallet===w:true)).reduce((a,t)=>a+parseFloat(t.profit||0),0);}
   function expFor(lbl){return expenses.filter(e=>getMonthLabel(getMonthStr(e.date))===lbl).reduce((a,e)=>a+parseFloat(e.amount||0),0);}
   function finFor(lbl){return finExpenses.filter(e=>getMonthLabel(getMonthStr(e.date))===lbl).reduce((a,e)=>a+parseFloat(e.amount||0),0);}
-  c.innerHTML=`
+  c.innerHTML=build6MonthChart()+`
     ${renderDailyBanner()}${renderMonthlyBanner()}
     <div class="rep-section">
       <div class="rep-title">Overall Summary</div>
@@ -1457,6 +1572,7 @@ function renderReports(c){
         </div>`;
       }).join('')}
     </div>`;
+  },200);
 }
 
 // ── ADD ITEM ──
@@ -1492,7 +1608,16 @@ async function addItem(){
 // ── SETTINGS ──
 function renderSettings(c){
   const hasPin=!!localStorage.getItem('cm_pin');
-  c.innerHTML=`<div class="fcard">
+  const goal=parseFloat(localStorage.getItem('cm_daily_goal'))||0;
+  c.innerHTML=`
+  <div class="fcard">
+    <div class="ftitle">Daily Goal</div>
+    <div class="settings-row">
+      <div style="display:flex;align-items:center"><div class="sr-icon">🎯</div><div><div class="sr-title">Daily Profit Target</div><div class="sr-sub">${goal>0?'Goal: '+fmt(goal):'No target set'}</div></div></div>
+      <button class="sr-action" onclick="const v=prompt('Daily profit goal (Rs):','${goal||''}');if(v!==null){const n=parseFloat(v)||0;localStorage.setItem('cm_daily_goal',n);renderTab();toast(n>0?'Goal set: '+fmt(n)+' ✅':'Goal removed');}">${goal>0?'Change':'Set'}</button>
+    </div>
+  </div>
+  <div class="fcard">
     <div class="ftitle">Security</div>
     <div class="settings-row">
       <div style="display:flex;align-items:center"><div class="sr-icon">🔐</div><div><div class="sr-title">PIN Lock</div><div class="sr-sub">${hasPin?'PIN is set — app locked on open':'No PIN set'}</div></div></div>
@@ -1600,6 +1725,8 @@ function closeModal(e){if(e.target.classList.contains('modal-bg'))document.getEl
 
 // ── ACTIONS ──
 async function confirmSell(id){
+  // track for quick sell
+  try{let r=JSON.parse(localStorage.getItem('cm_recent_sold')||'[]');r=r.filter(x=>x!==Number(id));r.unshift(Number(id));localStorage.setItem('cm_recent_sold',JSON.stringify(r.slice(0,8)));}catch{}
   const qty=parseInt(document.getElementById('sell-qty')?.value);
   const customerName=(document.getElementById('sell-customer')?.value||'').trim();
   const sellWallet=document.getElementById('sell-wallet')?.value||'cash';
@@ -1679,29 +1806,74 @@ if('serviceWorker' in navigator){
   }).catch(()=>{});
 }
 
-</script>
-</body>
-
 // ── MORE DRAWER ──
-const MORE_TABS = ['cart','usb','kharcha','sales','reports','inventory','addItem','settings'];
-
-function openMore() {
+const MORE_TABS=['cart','usb','kharcha','sales','reports','inventory','addItem','settings'];
+function openMore(){
   document.getElementById('more-overlay').classList.add('open');
-  // highlight active tab in grid
-  MORE_TABS.forEach(t => {
-    const el = document.getElementById('mg-'+t);
-    if(el) el.classList.toggle('on', activeTab===t);
-  });
+  MORE_TABS.forEach(t=>{const el=document.getElementById('mg-'+t);if(el)el.classList.toggle('on',activeTab===t);});
 }
-function closeMore() {
-  document.getElementById('more-overlay').classList.remove('open');
-}
-function openFromMore(tab) {
+function closeMore(){document.getElementById('more-overlay').classList.remove('open');}
+function openFromMore(tab){
   closeMore();
-  // deactivate main nav
-  document.querySelectorAll('.ni').forEach(b => b.classList.remove('on'));
-  document.getElementById('more-nav-btn').classList.add('on');
-  setTab(tab, null);
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('on'));
+  const mb=document.getElementById('more-nav-btn');if(mb)mb.classList.add('on');
+  setTab(tab,null);
+}
+
+// ── LOW STOCK BADGE ──
+function updateLowStockBadge(){
+  const count=inventory.filter(i=>parseInt(i.quantity)>0&&parseInt(i.quantity)<=3).length;
+  let dot=document.getElementById('low-stock-dot');
+  const mb=document.getElementById('more-nav-btn');
+  if(!mb)return;
+  if(count>0){
+    if(!dot){dot=document.createElement('span');dot.id='low-stock-dot';dot.className='nav-dot';mb.style.position='relative';mb.appendChild(dot);}
+  }else if(dot){dot.remove();}
+}
+
+// ── PULL TO REFRESH ──
+function initPullToRefresh(){
+  const cont=document.getElementById('content');
+  if(!cont||cont._ptr)return;
+  cont._ptr=true;
+  let sy=0,pulling=false,ptrel=null;
+  cont.addEventListener('touchstart',e=>{if(cont.scrollTop===0){sy=e.touches[0].clientY;pulling=true;}},{passive:true});
+  cont.addEventListener('touchmove',e=>{
+    if(!pulling)return;
+    const dy=e.touches[0].clientY-sy;
+    if(dy>55&&cont.scrollTop===0){
+      if(!ptrel){ptrel=document.createElement('div');ptrel.className='ptr';ptrel.innerHTML='<span class="ptr-spin">↻</span> Release to refresh';cont.prepend(ptrel);}
+      ptrel.classList.add('show');
+    }
+  },{passive:true});
+  cont.addEventListener('touchend',()=>{
+    if(pulling&&ptrel&&ptrel.classList.contains('show')){
+      ptrel.innerHTML='<span class="ptr-spin">↻</span> Refreshing...';
+      syncAll();
+      setTimeout(()=>{if(ptrel){ptrel.classList.remove('show');setTimeout(()=>{ptrel?.remove();ptrel=null;},250);}},1600);
+    }else if(ptrel){ptrel.classList.remove('show');setTimeout(()=>{ptrel?.remove();ptrel=null;},200);}
+    pulling=false;
+  },{passive:true});
+}
+
+// ── SWIPE TO DELETE ──
+function initSwipeDel(wrap,onDel){
+  if(wrap._sw)return;wrap._sw=true;
+  const inner=wrap.querySelector('.sw-inner');if(!inner)return;
+  let sx=0,cx=0,sw=false;
+  wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;cx=0;sw=true;inner.classList.remove('snap');},{passive:true});
+  wrap.addEventListener('touchmove',e=>{if(!sw)return;cx=e.touches[0].clientX-sx;if(cx<0)inner.style.transform=`translateX(${Math.max(cx,-72)}px)`;},{passive:true});
+  wrap.addEventListener('touchend',()=>{
+    sw=false;inner.classList.add('snap');
+    if(cx<-40)inner.style.transform='translateX(-72px)';
+    else inner.style.transform='';
+  },{passive:true});
+  const bg=wrap.querySelector('.sw-del-bg');if(bg)bg.addEventListener('click',onDel);
+}
+function applySwipeDel(){
+  document.querySelectorAll('.sw-wrap[data-del]').forEach(w=>{
+    initSwipeDel(w,()=>eval(w.dataset.del));
+  });
 }
 
 </script>
