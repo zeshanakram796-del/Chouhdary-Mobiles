@@ -93,16 +93,11 @@ html, body { height: 100%; background: var(--bg); color: var(--t); font-family: 
   padding: 52px 20px 0;
   background: var(--bg);
 }
-.topbar-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.shop-brand { display: flex; align-items: center; gap: 11px; }
-.shop-icon {
-  width: 40px; height: 40px; border-radius: 13px;
-  background: var(--s2); border: 1px solid var(--b2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
-}
-.shop-name { font-size: 16px; font-weight: 800; letter-spacing: -.3px; }
-.shop-sub { font-size: 10px; color: var(--mu); margin-top: 1px; }
+.topbar-row { display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; gap: 6px; }
+.shop-brand { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.shop-icon { display: none; }
+.shop-name { font-size: 26px; font-weight: 900; letter-spacing: -1px; text-align: center; }
+.shop-sub { font-size: 11px; color: var(--mu); margin-top: 1px; text-align: center; }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 .tb-btn {
   display: flex; align-items: center; gap: 6px;
@@ -150,12 +145,15 @@ html, body { height: 100%; background: var(--bg); color: var(--t); font-family: 
   display: flex; align-items: stretch;
   background: var(--s1); border-top: 1px solid var(--b);
   padding-bottom: env(safe-area-inset-bottom, 0);
+  overflow-x: auto; overflow-y: hidden;
 }
+.bnav::-webkit-scrollbar { display: none; }
 .ni {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 9px 4px 10px; gap: 4px; border: none; background: none; cursor: pointer;
-  font-family: var(--fn); font-size: 11px; font-weight: 500; color: var(--mu);
-  border-top: 2px solid transparent; margin-top: -1px; transition: color .15s;
+  flex-shrink: 0; min-width: 64px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 9px 8px 10px; gap: 4px; border: none; background: none; cursor: pointer;
+  font-family: var(--fn); font-size: 10px; font-weight: 500; color: var(--mu);
+  border-top: 2px solid transparent; margin-top: -1px; transition: color .15s; white-space: nowrap;
 }
 .ni .ic { font-size: 22px; transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
 .ni.on { color: var(--ac); border-top-color: var(--ac); }
@@ -580,13 +578,8 @@ html, body { height: 100%; background: var(--bg); color: var(--t); font-family: 
     <div class="more-title">More</div>
     <div class="more-grid">
       <div class="mg-item" id="mg-cart" onclick="openFromMore('cart')"><span class="mgi">🛒</span><span class="mgn">Cart</span></div>
-      <div class="mg-item" id="mg-usb" onclick="openFromMore('usb')"><span class="mgi">🔧</span><span class="mgn">USB</span></div>
-      <div class="mg-item" id="mg-kharcha" onclick="openFromMore('kharcha')"><span class="mgi">💸</span><span class="mgn">Expenses</span></div>
-      <div class="mg-item" id="mg-sales" onclick="openFromMore('sales')"><span class="mgi">📋</span><span class="mgn">Sales</span></div>
-      <div class="mg-item" id="mg-reports" onclick="openFromMore('reports')"><span class="mgi">📊</span><span class="mgn">Reports</span></div>
-      <div class="mg-item" id="mg-inventory" onclick="openFromMore('inventory')"><span class="mgi">📦</span><span class="mgn">Stock</span></div>
+      <div class="mg-item" id="mg-udhaar" onclick="openFromMore('udhaar')"><span class="mgi">📒</span><span class="mgn">Udhaar</span></div>
       <div class="mg-item" id="mg-addItem" onclick="openFromMore('addItem')"><span class="mgi">➕</span><span class="mgn">Add Item</span></div>
-      <div class="mg-item" id="mg-settings" onclick="openFromMore('settings')"><span class="mgi">⚙️</span><span class="mgn">Settings</span></div>
     </div>
   </div>
 </div>
@@ -594,23 +587,21 @@ html, body { height: 100%; background: var(--bg); color: var(--t); font-family: 
 <div class="app" id="app" style="display:none">
   <div class="topbar">
     <div class="topbar-row">
-      <div class="shop-brand">
-        <div class="shop-icon">📱</div>
-        <div>
-          <div class="shop-name">Chouhdary Mobiles</div>
-          <div class="shop-sub">POS &amp; Inventory · <span style="color:var(--ac)">v4.0</span></div>
-        </div>
-      </div>
-      <div class="topbar-actions">
+      <div style="display:flex;justify-content:flex-end;width:100%;gap:8px;margin-bottom:4px">
         <button class="cart-btn" id="cart-fab" onclick="setTab('cart')" style="display:none">🛒<span class="cart-n" id="cart-count">0</span></button>
         <button class="tb-btn synced" id="syncBtn" onclick="syncAll()"><span class="tb-dot"></span><span id="syncTxt">Synced</span></button>
+      </div>
+      <div class="shop-brand">
+        <div class="shop-name">Chouhdary Mobiles</div>
+        <div class="shop-sub">POS &amp; Inventory · <span style="color:var(--ac)">v4.0</span></div>
       </div>
     </div>
     <div class="stats-strip">
       <div class="stat"><div class="stat-lbl">Customers</div><div class="stat-val" id="s-customers">--</div></div>
       <div class="stat"><div class="stat-lbl">Today Profit</div><div class="stat-val g" id="s-today">--</div></div>
       <div class="stat"><div class="stat-lbl">Udhaar</div><div class="stat-val o" id="s-udhaar">--</div></div>
-      <div class="stat"><div class="stat-lbl">USB/Repair</div><div class="stat-val b" id="s-usb">--</div></div>
+      <div class="stat"><div class="stat-lbl">USB</div><div class="stat-val b" id="s-usb">--</div></div>
+      <div class="stat"><div class="stat-lbl">Repair</div><div class="stat-val p" id="s-repair">--</div></div>
       <div class="stat"><div class="stat-lbl">Wallets</div><div class="stat-val p" id="s-wallet">--</div></div>
       <div class="stat"><div class="stat-lbl">Expenses</div><div class="stat-val r" id="s-expense">--</div></div>
     </div>
@@ -620,9 +611,14 @@ html, body { height: 100%; background: var(--bg); color: var(--t); font-family: 
 
   <nav class="bnav">
     <button class="ni on" onclick="setTab('sell',this)" data-tab="sell"><span class="ic">💰</span><span>Sell</span></button>
-    <button class="ni" onclick="setTab('udhaar',this)" data-tab="udhaar"><span class="ic">📒</span><span>Udhaar</span></button>
+    <button class="ni" onclick="setTab('usb',this)" data-tab="usb"><span class="ic">🔧</span><span>USB</span></button>
     <button class="ni" onclick="setTab('wallets',this)" data-tab="wallets"><span class="ic">💳</span><span>Wallets</span></button>
+    <button class="ni" onclick="setTab('kharcha',this)" data-tab="kharcha"><span class="ic">💸</span><span>Expenses</span></button>
     <button class="ni" onclick="setTab('balance',this)" data-tab="balance"><span class="ic">💼</span><span>Balance</span></button>
+    <button class="ni" onclick="setTab('sales',this)" data-tab="sales"><span class="ic">📋</span><span>Sales</span></button>
+    <button class="ni" onclick="setTab('reports',this)" data-tab="reports"><span class="ic">📊</span><span>Reports</span></button>
+    <button class="ni" onclick="setTab('inventory',this)" data-tab="inventory"><span class="ic">📦</span><span>Stock</span></button>
+    <button class="ni" onclick="setTab('settings',this)" data-tab="settings"><span class="ic">⚙️</span><span>Settings</span></button>
     <button class="ni more-btn" onclick="openMore()" id="more-nav-btn"><span class="ic">⋯</span><span>More</span></button>
   </nav>
 </div>
@@ -778,7 +774,8 @@ function updateSummary(){
   const s=getDailyStats();
   document.getElementById('s-customers').textContent=s.totalCustomers;
   document.getElementById('s-today').textContent=fmtS(s.netProfit);
-  document.getElementById('s-usb').textContent=fmtS(usbJobs.reduce((a,j)=>a+parseFloat(j.profit||0),0));
+  document.getElementById('s-usb').textContent=fmtS(usbJobs.filter(j=>!String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0));
+  const repEl=document.getElementById('s-repair');if(repEl)repEl.textContent=fmtS(usbJobs.filter(j=>String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0));
   document.getElementById('s-wallet').textContent=fmtS(walletTx.reduce((a,t)=>a+parseFloat(t.profit||0),0));
   document.getElementById('s-udhaar').textContent=fmt(udhaarList.filter(u=>u.status!=='paid').reduce((a,u)=>a+parseFloat(u.amount||0),0));
   document.getElementById('s-expense').textContent=fmt(expenses.reduce((a,e)=>a+parseFloat(e.amount||0),0));
@@ -868,7 +865,7 @@ function renderMonthlyBanner(){
 }
 
 // ── TABS ──
-const MAIN_TABS=['sell','udhaar','wallets','balance'];
+const MAIN_TABS=['sell','usb','wallets','kharcha','balance','sales','reports','inventory','settings'];
 function setTab(tab,btn){
   activeTab=tab;searchQ='';filterCat='';
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('on'));
