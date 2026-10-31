@@ -1256,7 +1256,10 @@ function renderReports(c){
   const finExpAll=finExpenses.reduce((a,e)=>a+parseFloat(e.amount||0),0);
   const sortedItems=Object.entries(byItem).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const maxItem=sortedItems[0]?.[1]||1;
-  const sortedMonths=Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6);
+  const sortedMonths=Object.entries(byMonth).sort((a,b)=>{
+    const toKey=lbl=>{const p=lbl.split(' ');return parseInt(p[1]||0)*100+MONTHS.indexOf(p[0]||'');};
+    return toKey(b[0])-toKey(a[0]);
+  }).slice(0,6);
 
   function usbForMonth(ymLabel){
     return usbJobs.filter(j=>getMonthLabel(getMonthStr(j.date))===ymLabel).reduce((a,j)=>a+parseFloat(j.profit||0),0);
@@ -1376,13 +1379,13 @@ function showSellModal(id){
         </div>
         <div class="form-field" style="margin-bottom:10px">
           <label style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block">Quantity</label>
-          <input class="qty-input" type="number" id="sell-qty" value="1" min="1" max="${item.quantity}" inputmode="numeric"/>
+          <input class="qty-input" type="number" id="sell-qty" value="1" min="1" max="${item.quantity}" inputmode="numeric" oninput="updateSellMargin(${purchasePrice})"/>
         </div>
         <div class="form-field" style="margin-bottom:6px">
           <label style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block">Sale Price (Rs) — Edit for bargain</label>
-          <input class="qty-input" type="number" id="sell-price" value="${defaultSalePrice}" inputmode="numeric"/>
+          <input class="qty-input" type="number" id="sell-price" value="${defaultSalePrice}" inputmode="numeric" oninput="updateSellMargin(${purchasePrice})" />
         </div>
-        <div style="height:10px"></div>
+        <div class="bargain-hint" id="sell-margin-hint" style="margin-bottom:6px">Margin: <span style="color:var(--accent);font-weight:700">+${fmt(defaultSalePrice-purchasePrice)}</span> per unit · Total: <span style="color:var(--accent)">${fmt(defaultSalePrice)}</span></div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Select wallet where payment goes:</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px" id="sell-wallet-sel">
           <div class="balance-wallet" id="sw-cash" onclick="selectSellWallet('cash')" style="border-color:var(--accent)">
@@ -1487,7 +1490,11 @@ async function addItem(){
   try{
     const d=await apiPost({action:'addItem',name,category:cat,purchasePrice:buy,salePrice:sell,quantity:qty,lowStockAlert:alert});
     if(d.success){await syncAll();setTab('inventory');toast('Item added ✅');}
-  }catch(e){toast('Failed ❌');}
+    else{inventory.push({id:Date.now(),name,category,purchasePrice:buy,salePrice:sell,quantity:qty,lowStockAlert:alert});saveLocal();updateSummary();setTab('inventory');toast('Saved locally ⚠️');}
+  }catch(e){
+    inventory.push({id:Date.now(),name,category,purchasePrice:buy,salePrice:sell,quantity:qty,lowStockAlert:alert});
+    saveLocal();updateSummary();setTab('inventory');toast('Saved locally ⚠️');
+  }
 }
 
 async function confirmSell(id){
@@ -1498,6 +1505,7 @@ async function confirmSell(id){
   const actualSalePrice=parseFloat(document.getElementById('sell-price')?.value)||parseFloat(item?.salePrice||0);
 
   if(!qty||qty<1){toast('Enter valid quantity ⚠️');return;}
+  if(item && qty > parseInt(item.quantity)){toast('صرف '+item.quantity+' باقی ہیں! ⚠️');return;}
   document.getElementById('modal').innerHTML='';
   toast('Recording sale...');
   const totalSaleAmt=actualSalePrice*qty;
@@ -1543,7 +1551,10 @@ async function confirmRestock(id){
   try{
     const d=await apiPost({action:'updateQuantity',id,quantity:newQty});
     if(d.success){await syncAll();toast('Stock updated ✅');}
-  }catch(e){toast('Failed ❌');}
+    else{item.quantity=newQty;saveLocal();updateSummary();renderTab();toast('Updated locally ⚠️');}
+  }catch(e){
+    item.quantity=newQty;saveLocal();updateSummary();renderTab();toast('Updated locally ⚠️');
+  }
 }
 
 async function confirmEdit(id){
@@ -1559,17 +1570,22 @@ async function confirmEdit(id){
   try{
     const d=await apiPost({action:'updateItem',id,name,category,purchasePrice,salePrice,lowStockAlert});
     if(d.success){await syncAll();toast('Item updated ✅');}
-    else toast('Failed ❌');
-  }catch(e){toast('Failed ❌');}
+    else{const it=inventory.find(i=>Number(i.id)===Number(id));if(it)Object.assign(it,{name,category,purchasePrice,salePrice,lowStockAlert});saveLocal();updateSummary();renderTab();toast('Updated locally ⚠️');}
+  }catch(e){
+    const it=inventory.find(i=>Number(i.id)===Number(id));if(it)Object.assign(it,{name,category,purchasePrice,salePrice,lowStockAlert});
+    saveLocal();updateSummary();renderTab();toast('Updated locally ⚠️');
+  }
 }
 
 async function deleteItem(id){
   if(!confirm('Delete this item from inventory?'))return;
-  toast('Deleting...');
+  inventory=inventory.filter(i=>Number(i.id)!==Number(id));
+  saveLocal();updateSummary();renderTab();toast('Deleting...');
   try{
-    await apiPost({action:'deleteItem',id});
-    await syncAll();toast('Deleted ✅');
-  }catch(e){toast('Failed ❌');}
+    const r=await apiPost({action:'deleteItem',id});
+    if(!r.success)throw new Error(r.error||'fail');
+    toast('Deleted ✅');
+  }catch(e){toast('Deleted locally ⚠️',4000);}
 }
 
 loadLocal();updateSummary();renderTab();syncAll();
