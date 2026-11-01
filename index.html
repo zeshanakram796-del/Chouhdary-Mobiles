@@ -652,13 +652,8 @@ html, body { height: 100%; background: var(--bg); color: var(--t); font-family: 
       </div>
     </div>
     <div class="stats-strip">
-      <div class="stat"><div class="stat-lbl">Customers</div><div class="stat-val" id="s-customers">--</div></div>
+      <div class="stat"><div class="stat-lbl">Today Customers</div><div class="stat-val" id="s-customers">--</div></div>
       <div class="stat"><div class="stat-lbl">Today Profit</div><div class="stat-val g" id="s-today">--</div></div>
-      <div class="stat"><div class="stat-lbl">Udhaar</div><div class="stat-val o" id="s-udhaar">--</div></div>
-      <div class="stat"><div class="stat-lbl">USB</div><div class="stat-val b" id="s-usb">--</div></div>
-      <div class="stat"><div class="stat-lbl">Repair</div><div class="stat-val p" id="s-repair">--</div></div>
-      <div class="stat"><div class="stat-lbl">Wallets</div><div class="stat-val p" id="s-wallet">--</div></div>
-      <div class="stat"><div class="stat-lbl">Expenses</div><div class="stat-val r" id="s-expense">--</div></div>
     </div>
   </div>
 
@@ -830,11 +825,6 @@ function updateSummary(){
   const s=getDailyStats();
   document.getElementById('s-customers').textContent=s.totalCustomers;
   document.getElementById('s-today').textContent=fmtS(s.netProfit);
-  document.getElementById('s-usb').textContent=fmtS(usbJobs.filter(j=>!String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0));
-  const repEl=document.getElementById('s-repair');if(repEl)repEl.textContent=fmtS(usbJobs.filter(j=>String(j.desc||'').startsWith('[Repair]')).reduce((a,j)=>a+parseFloat(j.profit||0),0));
-  document.getElementById('s-wallet').textContent=fmtS(walletTx.reduce((a,t)=>a+parseFloat(t.profit||0),0));
-  document.getElementById('s-udhaar').textContent=fmt(udhaarList.filter(u=>u.status!=='paid').reduce((a,u)=>a+parseFloat(u.amount||0),0));
-  document.getElementById('s-expense').textContent=fmt(expenses.reduce((a,e)=>a+parseFloat(e.amount||0),0));
   updateCartBadge();
 }
 function updateCartBadge(){
@@ -867,7 +857,7 @@ function getDailyStats(){
   const walletP=walletTx.filter(t=>isToday(t.date)).reduce((a,t)=>a+parseFloat(t.profit||0),0);
   const expToday=expenses.filter(e=>isToday(e.date)).reduce((a,e)=>a+parseFloat(e.amount||0),0);
   const finExpToday=finExpenses.filter(e=>isToday(e.date)).reduce((a,e)=>a+parseFloat(e.amount||0),0);
-  const netProfit=productProfit+repair+usbOnly+walletP-expToday-finExpToday;
+  const netProfit=productProfit+repair+usbOnly+walletP;
   return{productRevenue,productProfit,totalCustomers,usbToday:usbOnly,repairToday:repair,walletToday:walletP,expToday,finExpToday,netProfit,txCount:todaySales.length};
 }
 
@@ -885,8 +875,8 @@ function renderDailyBanner(){
     <div class="bnr-div"></div>
     <div class="bnr-net">
       <div>
-        <div style="font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em">Net Profit Today</div>
-        <div style="font-size:10px;color:var(--mu);margin-top:2px">Products${s.repairToday>0?` + Repair`:``}${s.usbToday>0?` + USB`:``}${s.walletToday>0?` + Wallets`:``}${s.expToday>0?` − Exp`:``}</div>
+        <div style="font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em">Today's Earnings</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:2px">Products${s.repairToday>0?` + Repair`:``}${s.usbToday>0?` + USB`:``}${s.walletToday>0?` + Wallets`:``}</div>
       </div>
       <div class="bnr-net-val" style="${s.netProfit<0?'color:var(--rd)':''}">${fmt(s.netProfit)}</div>
     </div>
@@ -1280,13 +1270,25 @@ async function deleteUdhaar(id){
 
 // ── USB ──
 function renderUSB(c){
-  const tProfit=usbJobs.reduce((a,j)=>a+parseFloat(j.profit||0),0);
-  const tCharged=usbJobs.reduce((a,j)=>a+parseFloat(j.charged||0),0);
+  const curM=getCurrentMonthStr();
+  const monthJobs=usbJobs.filter(j=>getMonthStr(j.date)===curM);
+  const mUsb=monthJobs.filter(j=>!String(j.desc||'').startsWith('[Repair]'));
+  const mRep=monthJobs.filter(j=>String(j.desc||'').startsWith('[Repair]'));
+  const mUsbProfit=mUsb.reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  const mRepProfit=mRep.reduce((a,j)=>a+parseFloat(j.profit||0),0);
+  const mUsbCharged=mUsb.reduce((a,j)=>a+parseFloat(j.charged||0),0);
+  const mRepCharged=mRep.reduce((a,j)=>a+parseFloat(j.charged||0),0);
+  const mLabel=getMonthLabel(curM);
   const sorted=[...usbJobs].sort((a,b)=>b.id-a.id);
   c.innerHTML=`
+    <div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;font-weight:600">📅 ${mLabel}</div>
+    <div class="rep-cards" style="margin-bottom:6px">
+      <div class="rep-card"><div class="rep-card-lbl">🔌 USB Charged</div><div class="rep-card-val b">${fmt(mUsbCharged)}</div><div style="font-size:11px;color:var(--ac);margin-top:3px">Profit: ${fmt(mUsbProfit)}</div></div>
+      <div class="rep-card"><div class="rep-card-lbl">🔧 Repair Charged</div><div class="rep-card-val p">${fmt(mRepCharged)}</div><div style="font-size:11px;color:var(--ac);margin-top:3px">Profit: ${fmt(mRepProfit)}</div></div>
+    </div>
     <div class="rep-cards" style="margin-bottom:14px">
-      <div class="rep-card"><div class="rep-card-lbl">Total Charged</div><div class="rep-card-val b">${fmt(tCharged)}</div></div>
-      <div class="rep-card"><div class="rep-card-lbl">Net Profit</div><div class="rep-card-val g">${fmt(tProfit)}</div></div>
+      <div class="rep-card"><div class="rep-card-lbl">Month Total</div><div class="rep-card-val g">${fmt(mUsbCharged+mRepCharged)}</div></div>
+      <div class="rep-card"><div class="rep-card-lbl">Month Profit</div><div class="rep-card-val g">${fmt(mUsbProfit+mRepProfit)}</div></div>
     </div>
     <div class="fcard">
       <div class="ftitle">Add Job</div>
