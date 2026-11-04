@@ -752,6 +752,13 @@ function saveLocal(){
     localStorage.setItem('cm_finExp',JSON.stringify(finExpenses));
     localStorage.setItem('cm_purchases',JSON.stringify(purchases));
   }catch(e){}
+  pushBalanceToFinance();
+}
+function pushBalanceToFinance(){
+  try{
+    const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
+    fetch(FIN_API,{method:'POST',body:b}).catch(()=>{});
+  }catch(e){}
 }
 function loadLocal(){
   try{
