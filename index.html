@@ -1045,22 +1045,18 @@ function renderSellItems(){
     }).join('');
 }
 function buildHeroCard(){
-  const today=new Date().toLocaleDateString('en-GB');
-  const ts=sales.filter(s=>s.date===today);
-  const tp=ts.reduce((a,s)=>a+parseFloat(s.profit||0),0);
-  const tr=ts.reduce((a,s)=>a+parseFloat(s.amount||0),0);
-  const tc=new Set(ts.map(s=>s.customer||'x')).size;
+  const s=getDailyStats();
   const goal=parseFloat(localStorage.getItem('cm_daily_goal'))||0;
-  const pct=goal>0?Math.min(100,Math.round(tp/goal*100)):0;
+  const pct=goal>0?Math.min(100,Math.round(s.netProfit/goal*100)):0;
   return `<div class="hero" id="sell-hero">
     <div class="hero-lbl">Today's Profit</div>
-    <div class="hero-profit">${fmt(tp)}</div>
+    <div class="hero-profit">${fmt(s.netProfit)}</div>
     <div class="hero-stats">
-      <div class="hs"><div class="hs-n">${fmt(tr)}</div><div class="hs-l">Revenue</div></div>
-      <div class="hs"><div class="hs-n" style="color:var(--bl)">${ts.length}</div><div class="hs-l">Sales</div></div>
-      <div class="hs"><div class="hs-n" style="color:var(--pu)">${tc}</div><div class="hs-l">Customers</div></div>
+      <div class="hs"><div class="hs-n">${fmt(s.productRevenue)}</div><div class="hs-l">Revenue</div></div>
+      <div class="hs"><div class="hs-n" style="color:var(--bl)">${s.txCount}</div><div class="hs-l">Sales</div></div>
+      <div class="hs"><div class="hs-n" style="color:var(--pu)">${s.totalCustomers}</div><div class="hs-l">Customers</div></div>
     </div>
-    ${goal>0?`<div class="goal-wrap"><div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div><div class="goal-meta"><span>${fmt(tp)} of ${fmt(goal)} goal</span><span class="goal-pct">${pct}%</span></div></div>`:''}
+    ${goal>0?`<div class="goal-wrap"><div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div><div class="goal-meta"><span>${fmt(s.netProfit)} of ${fmt(goal)} goal</span><span class="goal-pct">${pct}%</span></div></div>`:''}
   </div>`;
 }
 function buildQuickSell(){
