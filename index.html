@@ -1363,26 +1363,81 @@ function renderWallets(c){
       ${easyTx.slice().reverse().map(t=>`<div class="tx"><div><div class="tx-desc">${escHtml(t.desc)}</div><div class="tx-meta">${t.date}</div></div><div style="display:flex;align-items:center;gap:6px"><div class="tx-amt in">+${fmt(t.profit)}</div><button class="del-btn" style="margin:0" onclick="deleteWalletTx(${t.id})">🗑️</button></div></div>`).join('')}
     </div>
     <div class="fcard" style="margin-top:12px">
-      <div class="ftitle">Add Commission / Profit</div>
+      <div class="ftitle">Wallet Entry</div>
       <div class="fgrid">
         <div class="ff"><label>Wallet</label><select id="w-wallet"><option value="JazzCash">📲 JazzCash</option><option value="EasyPaisa">💚 EasyPaisa</option></select></div>
-        <div class="ff"><label>Profit (Rs)</label><input type="number" id="w-profit" placeholder="0" inputmode="numeric"/></div>
+        <div class="ff"><label>Amount (Rs)</label><input type="number" id="w-profit" placeholder="0" inputmode="numeric"/></div>
+        <div class="ff full" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <label style="margin:0;font-size:13px;color:var(--mt)">Type</label>
+          <div style="display:flex;border:1px solid var(--b);border-radius:8px;overflow:hidden;flex-shrink:0">
+            <button id="wt-in" onclick="setWalletType('in')" style="padding:7px 14px;font-size:12px;font-weight:600;border:none;background:var(--ac);color:#000;cursor:pointer">📥 Commission</button>
+            <button id="wt-out" onclick="setWalletType('out')" style="padding:7px 14px;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--mt);cursor:pointer">📤 Withdrawal</button>
+          </div>
+        </div>
+        <div class="ff full" id="w-cash-row" style="display:none;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--s2);border-radius:10px;border:1px solid var(--b)">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--mt)">💵 Move to Cash</div>
+            <div style="font-size:11px;color:var(--mu);margin-top:2px">Amount will also be added to cash balance</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:42px;height:24px;margin:0">
+            <input type="checkbox" id="w-to-cash" style="opacity:0;width:0;height:0" onchange="document.getElementById('w-cash-slider').style.background=this.checked?'var(--ac)':'var(--b2)'">
+            <span onclick="document.getElementById('w-to-cash').click()" style="position:absolute;cursor:pointer;inset:0;background:var(--b2);border-radius:12px;transition:.2s" id="w-cash-slider"></span>
+          </label>
+        </div>
         <div class="ff full"><label>Description (optional)</label><input type="text" id="w-desc" placeholder="e.g. 5 transactions today"/></div>
       </div>
-      <button class="btn purple" onclick="addWalletTx()">✓ Add Profit</button>
+      <button class="btn purple" id="w-submit-btn" onclick="addWalletTx()">✓ Add Commission</button>
     </div>`;
+}
+let _walletType='in';
+function setWalletType(t){
+  _walletType=t;
+  const inBtn=document.getElementById('wt-in');
+  const outBtn=document.getElementById('wt-out');
+  const cashRow=document.getElementById('w-cash-row');
+  const submitBtn=document.getElementById('w-submit-btn');
+  if(t==='in'){
+    inBtn.style.background='var(--ac)';inBtn.style.color='#000';
+    outBtn.style.background='transparent';outBtn.style.color='var(--mt)';
+    cashRow.style.display='none';
+    submitBtn.textContent='✓ Add Commission';
+  }else{
+    outBtn.style.background='var(--rd)';outBtn.style.color='#fff';
+    inBtn.style.background='transparent';inBtn.style.color='var(--mt)';
+    cashRow.style.display='flex';
+    submitBtn.textContent='✓ Record Withdrawal';
+  }
+  // update slider color
+  const slider=document.getElementById('w-cash-slider');
+  const cb=document.getElementById('w-to-cash');
+  if(slider&&cb){slider.style.background=cb.checked?'var(--ac)':'var(--b2)';}
 }
 async function addWalletTx(){
   const wallet=document.getElementById('w-wallet')?.value;
-  const profit=parseFloat(document.getElementById('w-profit')?.value);
-  const desc=document.getElementById('w-desc')?.value.trim()||'Commission';
-  if(isNaN(profit)||profit<=0){toast('Enter profit amount ⚠️');return;}
+  const amount=parseFloat(document.getElementById('w-profit')?.value);
+  const toCash=document.getElementById('w-to-cash')?.checked&&_walletType==='out';
+  const isOut=_walletType==='out';
+  const desc=document.getElementById('w-desc')?.value.trim()||(isOut?'Withdrawal':'Commission');
+  if(isNaN(amount)||amount<=0){toast('Enter amount ⚠️');return;}
+  const profit=isOut?-amount:amount;
   toast('Saving...');
   try{
     const d=await apiPost({action:'addWallet',wallet,profit,desc});
-    if(d.success){if(wallet==='JazzCash')addToJazzBalance(profit,'Commission: '+desc);else addToEasyBalance(profit,'Commission: '+desc);await syncAll();toast('Profit added ✅');}
-    else{walletTx.push({id:Date.now(),wallet,profit,desc,date:todayStr()});saveLocal();updateSummary();renderTab();toast('Saved locally ⚠️');}
-  }catch(e){walletTx.push({id:Date.now(),wallet,profit,desc,date:todayStr()});saveLocal();updateSummary();renderTab();toast('Saved locally ⚠️');}
+    if(d.success){
+      if(wallet==='JazzCash')addToJazzBalance(profit,(isOut?'Withdrawal: ':'Commission: ')+desc);
+      else addToEasyBalance(profit,(isOut?'Withdrawal: ':'Commission: ')+desc);
+      if(toCash)addToCashBalance(amount,'From '+wallet+': '+desc);
+      await syncAll();toast(isOut?'Withdrawal recorded ✅':'Profit added ✅');
+    }else{
+      walletTx.push({id:Date.now(),wallet,profit,desc,date:todayStr()});
+      if(toCash)addToCashBalance(amount,'From '+wallet+': '+desc);
+      saveLocal();updateSummary();renderTab();toast('Saved locally ⚠️');
+    }
+  }catch(e){
+    walletTx.push({id:Date.now(),wallet,profit,desc,date:todayStr()});
+    if(toCash)addToCashBalance(amount,'From '+wallet+': '+desc);
+    saveLocal();updateSummary();renderTab();toast('Saved locally ⚠️');
+  }
 }
 async function deleteWalletTx(id){
   const t=walletTx.find(x=>x.id==id);if(!t)return;
@@ -1448,8 +1503,8 @@ async function deleteExpense(id){
 // ── BALANCE ──
 function addToCashBalance(amount,desc){balances.cash=(balances.cash||0)+amount;balanceTx.push({type:'in',wallet:'cash',amount,desc,date:todayStr(),ts:Date.now()});saveLocal();}
 function deductFromCashBalance(amount,desc){balances.cash=(balances.cash||0)-amount;balanceTx.push({type:'out',wallet:'cash',amount,desc,date:todayStr(),ts:Date.now()});saveLocal();}
-function addToJazzBalance(amount,desc){balances.jazz=(balances.jazz||0)+amount;balanceTx.push({type:'in',wallet:'jazz',amount,desc,date:todayStr(),ts:Date.now()});saveLocal();}
-function addToEasyBalance(amount,desc){balances.easy=(balances.easy||0)+amount;balanceTx.push({type:'in',wallet:'easy',amount,desc,date:todayStr(),ts:Date.now()});saveLocal();}
+function addToJazzBalance(amount,desc){balances.jazz=(balances.jazz||0)+amount;balanceTx.push({type:amount>=0?'in':'out',wallet:'jazz',amount:Math.abs(amount),desc,date:todayStr(),ts:Date.now()});saveLocal();}
+function addToEasyBalance(amount,desc){balances.easy=(balances.easy||0)+amount;balanceTx.push({type:amount>=0?'in':'out',wallet:'easy',amount:Math.abs(amount),desc,date:todayStr(),ts:Date.now()});saveLocal();}
 function addToBankBalance(amount,desc){balances.bank=(balances.bank||0)+amount;balanceTx.push({type:'in',wallet:'bank',amount,desc,date:todayStr(),ts:Date.now()});saveLocal();}
 function renderBalance(c){
   const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
