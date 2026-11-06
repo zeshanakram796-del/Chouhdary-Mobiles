@@ -735,7 +735,16 @@ function pinErr(msg){
   setTimeout(()=>{pinEntry='';updDots();const e=document.getElementById('pin-err');if(e)e.textContent='';},850);
 }
 function forgotPin(){if(confirm('Reset PIN? App will open without PIN.')){localStorage.removeItem('cm_pin');const ov=document.getElementById('pin-overlay');ov.innerHTML='';ov.classList.remove('active');launchApp();}}
-function launchApp(){document.getElementById('app').style.display='flex';loadLocal();updateSummary();renderTab();syncAll();fetchFinExpenses();setTimeout(initPullToRefresh,600);}
+function launchApp(){
+  document.getElementById('app').style.display='flex';
+  loadLocal();
+  updateSummary();renderTab();
+  syncAll();fetchFinExpenses();
+  setTimeout(initPullToRefresh,600);
+  // If this device has no balance, fetch from Sheet
+  const tot=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
+  if(tot===0) loadBalanceFromSheet();
+}
 
 // ── STORAGE ──
 function saveLocal(){
@@ -756,16 +765,32 @@ function saveLocal(){
 }
 let _pushTimer=null;
 function pushBalanceToFinance(){
-  // Only push if this device actually has balance data — prevent overwriting with zeros
   const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
   if(total===0 && balanceTx.length===0) return;
   clearTimeout(_pushTimer);
   _pushTimer=setTimeout(()=>{
     try{
       const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
+      // Save to both CM's own Sheet and Finance Tracker's Sheet
+      fetch(API,{method:'POST',body:b}).catch(()=>{});
       fetch(FIN_API,{method:'POST',body:b}).catch(()=>{});
     }catch(e){}
   },2000);
+}
+async function loadBalanceFromSheet(){
+  try{
+    const r=await fetch(API+'?action=getShopBalance');
+    const d=await r.json();
+    if(d&&d.success&&d.bal){
+      const b=d.bal;
+      const total=(b.cash||0)+(b.jazz||0)+(b.easy||0)+(b.bank||0);
+      if(total>0){
+        balances=b;
+        localStorage.setItem('cm_balances',JSON.stringify(balances));
+        updateSummary();
+      }
+    }
+  }catch(e){}
 }
 function loadLocal(){
   try{
