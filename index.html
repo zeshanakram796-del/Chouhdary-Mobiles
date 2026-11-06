@@ -756,6 +756,9 @@ function saveLocal(){
 }
 let _pushTimer=null;
 function pushBalanceToFinance(){
+  // Only push if this device actually has balance data — prevent overwriting with zeros
+  const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
+  if(total===0 && balanceTx.length===0) return;
   clearTimeout(_pushTimer);
   _pushTimer=setTimeout(()=>{
     try{
