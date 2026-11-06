@@ -770,17 +770,16 @@ function pushBalanceToFinance(){
   clearTimeout(_pushTimer);
   _pushTimer=setTimeout(()=>{
     try{
+      // Single source of truth: always write to FT Sheet (master)
       const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
-      // Save to both CM's own Sheet and Finance Tracker's Sheet
-      fetch(API,{method:'POST',body:b}).catch(()=>{});
       fetch(FIN_API,{method:'POST',body:b}).catch(()=>{});
     }catch(e){}
   },2000);
 }
 async function loadBalanceFromSheet(){
-  let loaded=false;
   try{
-    const r=await fetch(API+'?action=getShopBalance');
+    // Single source of truth: always read from FT Sheet (master)
+    const r=await fetch(FIN_API+'?action=getShopBalance');
     const d=await r.json();
     if(d&&d.success&&d.bal){
       const b=d.bal;
@@ -789,29 +788,9 @@ async function loadBalanceFromSheet(){
         balances=b;
         localStorage.setItem('cm_balances',JSON.stringify(balances));
         updateSummary();
-        loaded=true;
       }
     }
   }catch(e){}
-  // fallback: try Finance Tracker Sheet if CM Sheet was empty
-  if(!loaded){
-    try{
-      const r2=await fetch(FIN_API+'?action=getShopBalance');
-      const d2=await r2.json();
-      if(d2&&d2.success&&d2.bal){
-        const b2=d2.bal;
-        const tot2=(b2.cash||0)+(b2.jazz||0)+(b2.easy||0)+(b2.bank||0);
-        if(tot2>0){
-          balances=b2;
-          localStorage.setItem('cm_balances',JSON.stringify(balances));
-          updateSummary();
-          // write back to CM Sheet
-          const p=new URLSearchParams({action:'saveShopBalance',cash:b2.cash||0,jazz:b2.jazz||0,easy:b2.easy||0,bank:b2.bank||0});
-          fetch(API,{method:'POST',body:p}).catch(()=>{});
-        }
-      }
-    }catch(e2){}
-  }
 }
 function loadLocal(){
   try{
