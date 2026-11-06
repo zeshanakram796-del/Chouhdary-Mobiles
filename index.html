@@ -754,11 +754,15 @@ function saveLocal(){
   }catch(e){}
   pushBalanceToFinance();
 }
+let _pushTimer=null;
 function pushBalanceToFinance(){
-  try{
-    const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
-    fetch(FIN_API,{method:'POST',body:b}).catch(()=>{});
-  }catch(e){}
+  clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>{
+    try{
+      const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
+      fetch(FIN_API,{method:'POST',body:b}).catch(()=>{});
+    }catch(e){}
+  },2000);
 }
 function loadLocal(){
   try{
