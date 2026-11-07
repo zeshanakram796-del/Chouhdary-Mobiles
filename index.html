@@ -766,22 +766,25 @@ function saveLocal(){
 }
 let _pushTimer=null;
 let _balanceLoaded=false;
+let _balanceDirty=false; // true = local is ahead of Sheet, block incoming reads
 function pushBalanceToFinance(){
   if(!_balanceLoaded) return;
   const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
   if(total===0 && balanceTx.length===0) return;
+  _balanceDirty=true; // local changed — block Sheet reads until push succeeds
   clearTimeout(_pushTimer);
-  _pushTimer=setTimeout(()=>{
+  _pushTimer=setTimeout(async ()=>{
     try{
-      // Online: push to Sheet (master)
       const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
-      fetch(FIN_API,{method:'POST',body:b}).catch(()=>{});
+      await fetch(FIN_API,{method:'POST',body:b});
+      _balanceDirty=false; // push confirmed — Sheet is now up to date
     }catch(e){}
+    _pushTimer=null;
   },2000);
 }
 async function loadBalanceFromSheet(){
+  if(_balanceDirty){_balanceLoaded=true;return;} // local is newer — skip overwrite
   try{
-    // Online: always read from Sheet (master)
     const r=await fetch(FIN_API+'?action=getShopBalance');
     const d=await r.json();
     if(d&&d.success&&d.bal){
@@ -789,13 +792,11 @@ async function loadBalanceFromSheet(){
       const total=(b.cash||0)+(b.jazz||0)+(b.easy||0)+(b.bank||0);
       if(total>0){
         balances={cash:b.cash||0,jazz:b.jazz||0,easy:b.easy||0,bank:b.bank||0};
-        localStorage.setItem('cm_balances',JSON.stringify(balances)); // cache for offline
+        localStorage.setItem('cm_balances',JSON.stringify(balances));
         updateSummary();
       }
     }
-  }catch(e){
-    // Offline fallback: cm_balances already loaded via loadLocal()
-  }
+  }catch(e){/* offline: use cm_balances from loadLocal() */}
   _balanceLoaded=true;
 }
 function loadLocal(){
