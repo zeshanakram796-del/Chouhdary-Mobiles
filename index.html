@@ -737,13 +737,12 @@ function pinErr(msg){
 function forgotPin(){if(confirm('Reset PIN? App will open without PIN.')){localStorage.removeItem('cm_pin');const ov=document.getElementById('pin-overlay');ov.innerHTML='';ov.classList.remove('active');launchApp();}}
 function launchApp(){
   document.getElementById('app').style.display='flex';
+  _balanceLoaded=false; // block any push until master Sheet is read
   loadLocal();
   updateSummary();renderTab();
   syncAll();fetchFinExpenses();
   setTimeout(initPullToRefresh,600);
-  // If this device has no balance, fetch from Sheet
-  const tot=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
-  if(tot===0) loadBalanceFromSheet();
+  loadBalanceFromSheet(); // always fetch fresh from master (FT Sheet)
 }
 
 // ── STORAGE ──
@@ -764,7 +763,9 @@ function saveLocal(){
   pushBalanceToFinance();
 }
 let _pushTimer=null;
+let _balanceLoaded=false;
 function pushBalanceToFinance(){
+  if(!_balanceLoaded) return; // wait for master Sheet read to complete first
   const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
   if(total===0 && balanceTx.length===0) return;
   clearTimeout(_pushTimer);
@@ -791,6 +792,7 @@ async function loadBalanceFromSheet(){
       }
     }
   }catch(e){}
+  _balanceLoaded=true; // now safe for pushBalanceToFinance to run
 }
 function loadLocal(){
   try{
