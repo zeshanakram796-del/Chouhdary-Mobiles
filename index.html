@@ -682,6 +682,7 @@ const EXP_CATS=['Rent','Electricity','Staff Salary','Stock Purchase','Maintenanc
 
 let inventory=[],sales=[],reports={},usbJobs=[],walletTx=[],udhaarList=[],expenses=[];
 let balances={cash:0,jazz:0,easy:0,bank:0},balanceTx=[],finExpenses=[],purchases=[];
+let deductedFinIds=new Set(); // IDs of FT expenses already deducted from cash
 let cart=[];
 let activeTab='sell',searchQ='',filterCat='',isSyncing=false,revealTimers={};
 
@@ -759,6 +760,7 @@ function saveLocal(){
     localStorage.setItem('cm_balanceTx',JSON.stringify(balanceTx));
     localStorage.setItem('cm_finExp',JSON.stringify(finExpenses));
     localStorage.setItem('cm_purchases',JSON.stringify(purchases));
+    localStorage.setItem('cm_deducted_fin',JSON.stringify([...deductedFinIds]));
   }catch(e){}
   pushBalanceToFinance();
 }
@@ -834,6 +836,7 @@ function loadLocal(){
     balanceTx=JSON.parse(localStorage.getItem('cm_balanceTx')||'[]');
     finExpenses=JSON.parse(localStorage.getItem('cm_finExp')||'[]');
     purchases=JSON.parse(localStorage.getItem('cm_purchases')||'[]');
+    deductedFinIds=new Set(JSON.parse(localStorage.getItem('cm_deducted_fin')||'[]'));
   }catch(e){}
   setTimeout(updateLowStockBadge,100);
 }
@@ -1570,6 +1573,8 @@ function renderBalance(c){
   const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
   const sortedTx=[...balanceTx].sort((a,b)=>b.ts-a.ts);
   const finTotal=finExpenses.reduce((a,e)=>a+parseFloat(e.amount||0),0);
+  const pendingFin=finExpenses.filter(e=>!deductedFinIds.has(String(e.id)));
+  const pendingFinTotal=pendingFin.reduce((a,e)=>a+parseFloat(e.amount||0),0);
   c.innerHTML=`
     <div class="bal-hero">
       <div class="bal-hero-lbl">💼 Current Balance <em>Tap to edit</em></div>
@@ -1591,7 +1596,22 @@ function renderBalance(c){
       </div>
       <button class="btn pri" onclick="addBalanceTx()">✓ Add Entry</button>
     </div>
-    ${finTotal>0?`<div class="fcard" style="border-color:var(--rd)"><div class="ftitle" style="color:var(--rd)">Finance Tracker Expenses <span class="fin-tag">FIN</span></div><div style="font-size:13px;color:var(--mu);margin-bottom:8px">Synced from Finance Tracker.</div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div>Total Personal Expenses</div><div style="font-size:17px;font-weight:700;font-family:var(--mono);color:var(--rd)">−${fmt(finTotal)}</div></div><button class="btn danger" onclick="deductFinExpenses()">✓ Deduct from Cash</button></div>`:''}
+    ${finTotal>0?`<div class="fcard" style="border-color:${pendingFinTotal>0?'var(--rd)':'var(--border)'}">
+      <div class="ftitle" style="color:var(--rd)">Finance Tracker Expenses <span class="fin-tag">FIN</span></div>
+      <div style="font-size:13px;color:var(--mu);margin-bottom:8px">Synced from Finance Tracker.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:13px;color:var(--mu)">Total</div>
+        <div style="font-family:var(--mono);color:var(--mu)">−${fmt(finTotal)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>${pendingFinTotal>0?'Pending deduction':'All deducted'}</div>
+        <div style="font-size:17px;font-weight:700;font-family:var(--mono);color:${pendingFinTotal>0?'var(--rd)':'var(--gr)'}">
+          ${pendingFinTotal>0?`−${fmt(pendingFinTotal)}`:'✓ Done'}
+        </div>
+      </div>
+      ${pendingFinTotal>0?`<button class="btn danger" onclick="deductFinExpenses()">✓ Deduct ${fmt(pendingFinTotal)} from Cash</button>`
+        :`<div style="text-align:center;font-size:13px;color:var(--gr);padding:4px 0">All expenses deducted ✅</div>`}
+    </div>`:''}
     ${!sortedTx.length?`<div class="empty"><div class="empty-icon">💼</div><div class="empty-text">No entries yet</div></div>`:
     `<div class="sec-lbl">Transaction History</div>
     ${sortedTx.slice(0,30).map(tx=>`<div class="tx" style="padding:10px 0"><div><div class="tx-desc">${escHtml(tx.desc||'Entry')}</div><div class="tx-meta">${tx.wallet==='cash'?'💵 Cash':tx.wallet==='jazz'?'📲 JazzCash':tx.wallet==='bank'?'🏦 Bank':'💚 EasyPaisa'} · ${tx.date}</div></div><div class="tx-amt ${tx.type==='in'?'in':'out'}">${tx.type==='in'?'+':'−'}${fmt(tx.amount)}</div></div>`).join('')}`}`;
@@ -1621,11 +1641,13 @@ function addBalanceTx(){
   saveLocal();renderTab();toast(type==='in'?'Added ✅':'Deducted ✅');
 }
 function deductFinExpenses(){
-  const finTotal=finExpenses.reduce((a,e)=>a+parseFloat(e.amount||0),0);
-  if(!finTotal){toast('No finance expenses ⚠️');return;}
-  if(!confirm(`Deduct ${fmt(finTotal)} from cash?`))return;
-  balances.cash=(balances.cash||0)-finTotal;
-  balanceTx.push({type:'out',wallet:'cash',amount:finTotal,desc:'Finance Tracker deducted',date:todayStr(),ts:Date.now()});
+  const pending=finExpenses.filter(e=>!deductedFinIds.has(String(e.id)));
+  const pendingTotal=pending.reduce((a,e)=>a+parseFloat(e.amount||0),0);
+  if(!pendingTotal){toast('Already deducted — nothing new ✅');return;}
+  if(!confirm(`Deduct ${fmt(pendingTotal)} (${pending.length} new expense${pending.length>1?'s':''}) from cash?`))return;
+  balances.cash=(balances.cash||0)-pendingTotal;
+  pending.forEach(e=>deductedFinIds.add(String(e.id)));
+  balanceTx.push({type:'out',wallet:'cash',amount:pendingTotal,desc:'Finance Tracker deducted',date:todayStr(),ts:Date.now()});
   saveLocal();renderTab();toast('Deducted ✅');
 }
 
