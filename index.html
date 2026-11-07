@@ -765,25 +765,37 @@ function saveLocal(){
   pushBalanceToFinance();
 }
 let _pushTimer=null;
+let _pushRetry=0;
 let _balanceLoaded=false;
-let _balanceDirty=false; // true = local is ahead of Sheet, block incoming reads
+let _balanceDirty=false;
 function pushBalanceToFinance(){
-  if(!_balanceLoaded) return;
   const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
   if(total===0 && balanceTx.length===0) return;
-  _balanceDirty=true; // local changed — block Sheet reads until push succeeds
+  _balanceDirty=true; // mark dirty FIRST — protects local value even before load
+  if(!_balanceLoaded) return; // can't push yet, but balance is protected
   clearTimeout(_pushTimer);
-  _pushTimer=setTimeout(async ()=>{
-    try{
-      const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
-      await fetch(FIN_API,{method:'POST',body:b});
-      _balanceDirty=false; // push confirmed — Sheet is now up to date
-    }catch(e){}
-    _pushTimer=null;
-  },2000);
+  _pushRetry=0;
+  _doPush();
+}
+async function _doPush(){
+  try{
+    const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
+    await fetch(FIN_API,{method:'POST',body:b});
+    _balanceDirty=false;
+    _pushRetry=0;
+  }catch(e){
+    if(_pushRetry<3){
+      _pushRetry++;
+      _pushTimer=setTimeout(_doPush,_pushRetry*3000); // retry: 3s, 6s, 9s
+    }
+  }
 }
 async function loadBalanceFromSheet(){
-  if(_balanceDirty){_balanceLoaded=true;return;} // local is newer — skip overwrite
+  if(_balanceDirty){
+    _balanceLoaded=true;
+    _doPush(); // push pending local changes now that we're ready
+    return;
+  }
   try{
     const r=await fetch(FIN_API+'?action=getShopBalance');
     const d=await r.json();
