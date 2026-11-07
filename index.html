@@ -762,37 +762,63 @@ function saveLocal(){
   }catch(e){}
   pushBalanceToFinance();
 }
+// ── Shared balance helpers (same-origin localStorage, shared with FT) ──────────
+function writeSharedBal(b){
+  try{localStorage.setItem('shared_shop_bal',JSON.stringify({cash:b.cash||0,jazz:b.jazz||0,easy:b.easy||0,bank:b.bank||0,ts:Date.now()}));}catch(e){}
+}
+function readSharedBal(){
+  try{const s=localStorage.getItem('shared_shop_bal');return s?JSON.parse(s):null;}catch(e){return null;}
+}
+// Listen for balance updates from FT (same device, other tab)
+window.addEventListener('storage',e=>{
+  if(e.key!=='shared_shop_bal'||!e.newValue)return;
+  try{
+    const b=JSON.parse(e.newValue);
+    balances={cash:b.cash||0,jazz:b.jazz||0,easy:b.easy||0,bank:b.bank||0};
+    localStorage.setItem('cm_balances',JSON.stringify(balances));
+    updateSummary();
+  }catch(err){}
+});
+
 let _pushTimer=null;
 let _balanceLoaded=false;
 function pushBalanceToFinance(){
-  if(!_balanceLoaded) return; // wait for master Sheet read to complete first
+  if(!_balanceLoaded) return;
   const total=(balances.cash||0)+(balances.jazz||0)+(balances.easy||0)+(balances.bank||0);
   if(total===0 && balanceTx.length===0) return;
+  writeSharedBal(balances); // instant same-device sync
   clearTimeout(_pushTimer);
   _pushTimer=setTimeout(()=>{
     try{
-      // Single source of truth: always write to FT Sheet (master)
       const b=new URLSearchParams({action:'saveShopBalance',cash:balances.cash||0,jazz:balances.jazz||0,easy:balances.easy||0,bank:balances.bank||0});
       fetch(FIN_API,{method:'POST',body:b}).catch(()=>{});
     }catch(e){}
   },2000);
 }
 async function loadBalanceFromSheet(){
+  // 1. Instant: check shared localStorage (same device as FT)
+  const loc=readSharedBal();
+  if(loc&&(loc.cash||0)+(loc.jazz||0)+(loc.easy||0)+(loc.bank||0)>0){
+    balances={cash:loc.cash||0,jazz:loc.jazz||0,easy:loc.easy||0,bank:loc.bank||0};
+    localStorage.setItem('cm_balances',JSON.stringify(balances));
+    updateSummary();
+  }
+  // 2. Always fetch Sheet (cross-device updates)
   try{
-    // Single source of truth: always read from FT Sheet (master)
     const r=await fetch(FIN_API+'?action=getShopBalance');
     const d=await r.json();
     if(d&&d.success&&d.bal){
       const b=d.bal;
       const total=(b.cash||0)+(b.jazz||0)+(b.easy||0)+(b.bank||0);
       if(total>0){
-        balances=b;
+        balances={cash:b.cash||0,jazz:b.jazz||0,easy:b.easy||0,bank:b.bank||0};
         localStorage.setItem('cm_balances',JSON.stringify(balances));
+        writeSharedBal(balances);
         updateSummary();
       }
     }
   }catch(e){}
-  _balanceLoaded=true; // now safe for pushBalanceToFinance to run
+  _balanceLoaded=true;
 }
 function loadLocal(){
   try{
