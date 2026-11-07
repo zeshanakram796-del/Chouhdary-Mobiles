@@ -1967,6 +1967,13 @@ async function deleteItem(id){
   catch(e){toast('Deleted locally ⚠️',4000);}
 }
 
+// Refresh balance when user switches back to CM from Finance Tracker
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && _balanceLoaded) loadBalanceFromSheet();
+});
+// Also poll every 30s while app is open
+setInterval(()=>{ if(document.visibilityState==='visible' && _balanceLoaded) loadBalanceFromSheet(); },30000);
+
 // ── BOOT ──
 loadLocal();updateSummary();initApp();
 if('serviceWorker' in navigator){
